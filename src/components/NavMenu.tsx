@@ -2,16 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useOrg } from "@/context/OrgContext";
 
-interface NavItem {
-  label: string;
-  href: string;
-}
-
-const navItems: NavItem[] = [{ label: "Map", href: "/map" }];
+const navItems = [
+  { label: "Map", href: "/map" },
+];
 
 export default function NavMenu() {
   const [open, setOpen] = useState(false);
+  const { activeOrg } = useOrg();
 
   return (
     <>
@@ -34,6 +33,19 @@ export default function NavMenu() {
             ))}
           </ul>
         </nav>
+        <div className="border-t border-gray-700 px-3 py-3">
+          {activeOrg && (
+            <p className="mb-2 truncate px-2 text-xs text-gray-400">
+              {activeOrg.name}
+            </p>
+          )}
+          <Link
+            href="/settings"
+            className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          >
+            Settings
+          </Link>
+        </div>
       </aside>
 
       {/* Mobile header with hamburger */}
@@ -98,6 +110,15 @@ export default function NavMenu() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link
+                href="/settings"
+                onClick={() => setOpen(false)}
+                className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                Settings
+              </Link>
+            </li>
           </ul>
         </nav>
       )}

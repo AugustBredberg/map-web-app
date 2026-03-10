@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
+import { OrgProvider } from "@/context/OrgContext";
 
 export const metadata: Metadata = {
   title: "Map Web App",
@@ -13,7 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <AuthProvider>
+          <OrgProvider>{children}</OrgProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }
