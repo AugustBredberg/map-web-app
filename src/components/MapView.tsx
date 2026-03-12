@@ -9,19 +9,33 @@ import { useOrg } from "@/context/OrgContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
 import CreateProjectForm from "@/components/CreateProjectForm";
+import ProjectDetailsPanel from "@/components/ProjectDetailsPanel";
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
 const MAP_STYLE = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
 
-function addMarker(map: maplibregl.Map, project: Project) {
+function addMarker(
+  map: maplibregl.Map,
+  project: Project,
+  markersMap: Map<string, HTMLElement>,
+  onClickProject: (project: Project) => void,
+) {
   if (!project.location?.coordinates) return;
   const [lng, lat] = project.location.coordinates;
-  const popup = new maplibregl.Popup({ offset: 12 }).setHTML(
-    `<strong class="text-sm">${project.title}</strong>`
-  );
   const marker = new maplibregl.Marker({ color: "#3b82f6" });
-  marker.getElement().classList.add("project-marker");
-  marker.setLngLat([lng, lat]).setPopup(popup).addTo(map);
+  const el = marker.getElement();
+  el.classList.add("project-marker");
+  el.style.cursor = "pointer";
+  // Scale the inner SVG only — the root element's transform is owned by MapLibre for positioning
+  const pin = el.firstElementChild as HTMLElement;
+  pin.style.transition = "transform 0.15s ease";
+  pin.style.transformOrigin = "bottom center";
+  markersMap.set(project.project_id, pin);
+  el.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onClickProject(project);
+  });
+  marker.setLngLat([lng, lat]).addTo(map);
 }
 
 export default function MapView() {
@@ -35,6 +49,31 @@ export default function MapView() {
   useEffect(() => { activeOrgRef.current = activeOrg; }, [activeOrg]);
 
   const { openDrawer, closeDrawer, isOpen: drawerOpen } = useDrawer();
+  const openDrawerRef = useRef(openDrawer);
+  useEffect(() => { openDrawerRef.current = openDrawer; }, [openDrawer]);
+
+  const markersMapRef = useRef(new Map<string, HTMLElement>());
+  const selectedProjectIdRef = useRef<string | null>(null);
+
+  const applySelectionRef = useRef(() => {
+    const selectedId = selectedProjectIdRef.current;
+    markersMapRef.current.forEach((el, id) => {
+      el.style.transform = id === selectedId ? "scale(1.4)" : "";
+    });
+  });
+
+  const handleProjectClickRef = useRef((project: Project) => {
+    selectedProjectIdRef.current = project.project_id;
+    applySelectionRef.current();
+    openDrawerRef.current(<ProjectDetailsPanel project={project} />, {
+      title: project.title,
+      backdrop: false,
+      onClose: () => {
+        selectedProjectIdRef.current = null;
+        applySelectionRef.current();
+      },
+    });
+  });
 
   const {
     isCreating,
@@ -60,7 +99,7 @@ export default function MapView() {
 
   const handleAddClick = useCallback(() => {
     startCreating();
-    openDrawer(<CreateProjectForm />, { onClose: cancelCreating, backdrop: false });
+    openDrawer(<CreateProjectForm />, { onClose: cancelCreating, backdrop: false, title: "New Project" });
   }, [startCreating, openDrawer, cancelCreating]);
 
   // Map initialisation
@@ -84,6 +123,9 @@ export default function MapView() {
     );
 
     mapRef.current = map;
+    const markersMap = markersMapRef.current;
+
+    map.on("render", () => applySelectionRef.current());
 
     map.once("load", async () => {
       const { data, error } = await supabase
@@ -93,12 +135,13 @@ export default function MapView() {
         console.error("Failed to load projects:", error.message);
         return;
       }
-      (data as Project[]).forEach((p) => addMarker(map, p));
+      (data as Project[]).forEach((p) => addMarker(map, p, markersMap, handleProjectClickRef.current));
     });
 
     return () => {
       map.remove();
       mapRef.current = null;
+      markersMap.clear();
     };
   }, []);
 
@@ -188,7 +231,7 @@ export default function MapView() {
 
         tempMarkerRef.current?.remove();
         tempMarkerRef.current = null;
-        if (mapRef.current) addMarker(mapRef.current, project);
+        if (mapRef.current) addMarker(mapRef.current, project, markersMapRef.current, handleProjectClickRef.current);
         onSubmitHandled();
         closeDrawer();
       });
