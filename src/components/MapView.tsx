@@ -65,6 +65,17 @@ export default function MapView() {
   const handleProjectClickRef = useRef((project: Project) => {
     selectedProjectIdRef.current = project.project_id;
     applySelectionRef.current();
+
+    // On mobile, pan so the pin sits at 25% from the top (above the 50% drawer)
+    if (window.innerWidth < 768 && project.location?.coordinates && mapRef.current) {
+      const [lng, lat] = project.location.coordinates;
+      mapRef.current.easeTo({
+        center: [lng, lat],
+        offset: [0, -window.innerHeight * 0.2],
+        duration: 300,
+      });
+    }
+
     openDrawerRef.current(<ProjectDetailsPanel project={project} />, {
       title: project.title,
       backdrop: false,
