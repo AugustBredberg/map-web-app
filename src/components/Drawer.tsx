@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "@heroui/react";
 import { useDrawer } from "@/context/DrawerContext";
 
 export default function Drawer() {
@@ -95,10 +96,13 @@ export default function Drawer() {
 
         {/* Sticky header with close button */}
         <div className="sticky top-0 flex items-center justify-end border-b border-gray-100 bg-white/95 px-4 py-3 backdrop-blur-sm">
-          <button
-            onClick={closeDrawer}
+          <Button
+            isIconOnly
+            variant="light"
+            size="sm"
+            onPress={closeDrawer}
             aria-label="Close"
-            className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            className="text-gray-400"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -114,7 +118,7 @@ export default function Drawer() {
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Dynamic content */}

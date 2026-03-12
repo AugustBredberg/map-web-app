@@ -1,12 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
-export type MapObject = {
-  id: string;
-  created_at: string;
-  user_id: string | null;
+export type Project = {
+  project_id: string;
   organization_id: string | null;
+  created_at: string;
+  created_by: string | null;
+  start_time: string | null;
+  expected_hours: number | null;
+  project_status: number | null;
   title: string;
-  // PostGIS geography column — returned as GeoJSON by the REST API
+  // PostGIS geometry column — returned as GeoJSON by the REST API
   location: { type: "Point"; coordinates: [number, number] } | null;
 };
 
@@ -21,6 +24,7 @@ export type OrganizationMember = {
   user_id: string;
   role: string | null;
   created_at: string;
+  display_name: string | null;
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

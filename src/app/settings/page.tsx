@@ -1,5 +1,6 @@
 "use client";
 
+import { Button, Spinner } from "@heroui/react";
 import { useOrg } from "@/context/OrgContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -7,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import type { Organization } from "@/lib/supabase";
 
 export default function SettingsPage() {
-  const { organizations, activeOrg, setActiveOrg, loading } = useOrg();
+  const { organizations, activeOrg, activeRole, displayName, setActiveOrg, loading } = useOrg();
   const { session } = useAuth();
   const router = useRouter();
 
@@ -22,17 +23,19 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-950 text-white">
+    <div className="dark flex min-h-screen flex-col bg-gray-950 text-white">
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-gray-800 px-6">
         <span className="text-base font-semibold">Settings</span>
         {activeOrg && (
-          <button
-            onClick={() => router.back()}
-            className="text-sm text-gray-400 hover:text-white"
+          <Button
+            variant="light"
+            size="sm"
+            onPress={() => router.back()}
+            className="text-gray-400"
           >
             ← Back
-          </button>
+          </Button>
         )}
       </header>
 
@@ -43,7 +46,15 @@ export default function SettingsPage() {
             Account
           </h2>
           <div className="rounded-xl bg-gray-900 px-4 py-3 ring-1 ring-white/10">
+            {displayName && (
+              <p className="text-sm font-medium text-white">{displayName}</p>
+            )}
             <p className="text-sm text-gray-300">{session?.user.email}</p>
+            {activeRole && (
+              <p className="mt-1 text-xs text-gray-500">
+                Role: <span className="capitalize text-gray-400">{activeRole}</span>
+              </p>
+            )}
           </div>
         </section>
 
@@ -54,7 +65,9 @@ export default function SettingsPage() {
           </h2>
 
           {loading ? (
-            <p className="text-sm text-gray-400">Loading organizations…</p>
+            <div className="flex justify-center py-2">
+              <Spinner color="white" />
+            </div>
           ) : organizations.length === 0 ? (
             <div className="rounded-xl bg-gray-900 px-4 py-4 ring-1 ring-white/10">
               <p className="text-sm text-gray-400">
@@ -68,20 +81,16 @@ export default function SettingsPage() {
                 const isActive = activeOrg?.organization_id === org.organization_id;
                 return (
                   <li key={org.organization_id}>
-                    <button
-                      onClick={() => handleSelect(org)}
-                      className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left ring-1 transition-colors ${
-                        isActive
-                          ? "bg-blue-600/20 ring-blue-500 text-white"
-                          : "bg-gray-900 ring-white/10 text-gray-200 hover:bg-gray-800"
-                      }`}
-                    >
-                      <span className="text-sm font-medium">{org.name}</span>
-                      {isActive && (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500">
+                    <Button
+                      onPress={() => handleSelect(org)}
+                      variant={isActive ? "flat" : "bordered"}
+                      color={isActive ? "primary" : "default"}
+                      className="w-full justify-between"
+                      endContent={
+                        isActive ? (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-3 w-3 text-white"
+                            className="h-3 w-3"
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
@@ -91,9 +100,11 @@ export default function SettingsPage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                        </span>
-                      )}
-                    </button>
+                        ) : null
+                      }
+                    >
+                      <span className="text-sm font-medium">{org.name}</span>
+                    </Button>
                   </li>
                 );
               })}
@@ -106,12 +117,14 @@ export default function SettingsPage() {
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-500">
             Session
           </h2>
-          <button
-            onClick={handleSignOut}
-            className="w-full rounded-xl bg-gray-900 px-4 py-3 text-left text-sm font-medium text-red-400 ring-1 ring-white/10 transition-colors hover:bg-gray-800 hover:text-red-300"
+          <Button
+            color="danger"
+            variant="flat"
+            onPress={handleSignOut}
+            fullWidth
           >
             Sign out
-          </button>
+          </Button>
         </section>
       </main>
     </div>

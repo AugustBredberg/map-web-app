@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Button, Input } from "@heroui/react";
 import { supabase } from "@/lib/supabase";
 
 type AuthMode = "signin" | "signup";
@@ -46,7 +47,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-950 px-4">
+    <div className="dark flex min-h-screen items-center justify-center bg-gray-950 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-gray-900 p-8 shadow-2xl ring-1 ring-white/10">
         {/* Header */}
         <h1 className="mb-1 text-2xl font-bold text-white">
@@ -59,43 +60,30 @@ export default function LoginPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-xs font-medium text-gray-400">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg bg-gray-800 px-3 py-2.5 text-sm text-white placeholder-gray-500 outline-none ring-1 ring-white/10 focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
+          <Input
+            id="email"
+            type="email"
+            label="Email"
+            autoComplete="email"
+            isRequired
+            value={email}
+            onValueChange={setEmail}
+            placeholder="you@example.com"
+            variant="bordered"
+          />
 
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="password"
-              className="text-xs font-medium text-gray-400"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete={
-                mode === "signin" ? "current-password" : "new-password"
-              }
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="rounded-lg bg-gray-800 px-3 py-2.5 text-sm text-white placeholder-gray-500 outline-none ring-1 ring-white/10 focus:ring-blue-500"
-              placeholder="••••••••"
-            />
-          </div>
+          <Input
+            id="password"
+            type="password"
+            label="Password"
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            isRequired
+            minLength={6}
+            value={password}
+            onValueChange={setPassword}
+            placeholder="••••••••"
+            variant="bordered"
+          />
 
           {error && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400 ring-1 ring-red-500/20">
@@ -108,17 +96,15 @@ export default function LoginPage() {
             </p>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="mt-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+            color="primary"
+            isLoading={loading}
+            fullWidth
+            className="mt-1"
           >
-            {loading
-              ? "Please wait…"
-              : mode === "signin"
-                ? "Sign in"
-                : "Create account"}
-          </button>
+            {mode === "signin" ? "Sign in" : "Create account"}
+          </Button>
         </form>
 
         {/* Toggle mode */}
@@ -126,30 +112,28 @@ export default function LoginPage() {
           {mode === "signin" ? (
             <>
               Don&apos;t have an account?{" "}
-              <button
-                onClick={() => {
-                  setMode("signup");
-                  setError(null);
-                  setMessage(null);
-                }}
-                className="font-medium text-blue-400 hover:text-blue-300"
+              <Button
+                variant="light"
+                size="sm"
+                color="primary"
+                onPress={() => { setMode("signup"); setError(null); setMessage(null); }}
+                className="h-auto min-w-0 p-0 font-medium"
               >
                 Sign up
-              </button>
+              </Button>
             </>
           ) : (
             <>
               Already have an account?{" "}
-              <button
-                onClick={() => {
-                  setMode("signin");
-                  setError(null);
-                  setMessage(null);
-                }}
-                className="font-medium text-blue-400 hover:text-blue-300"
+              <Button
+                variant="light"
+                size="sm"
+                color="primary"
+                onPress={() => { setMode("signin"); setError(null); setMessage(null); }}
+                className="h-auto min-w-0 p-0 font-medium"
               >
                 Sign in
-              </button>
+              </Button>
             </>
           )}
         </p>

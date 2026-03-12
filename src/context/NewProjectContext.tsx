@@ -13,10 +13,28 @@ export interface PickedLocation {
   lat: number;
 }
 
+export const PROJECT_STATUSES = [
+  { value: 0, label: "Lead" },
+  { value: 1, label: "Offered" },
+  { value: 2, label: "Accepted" },
+  { value: 3, label: "Ongoing" },
+  { value: 4, label: "Done" },
+  { value: 5, label: "Invoicing" },
+  { value: 6, label: "Paid" },
+] as const;
+
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number]["value"];
+
 interface NewProjectContextValue {
   isCreating: boolean;
   title: string;
   setTitle: (t: string) => void;
+  status: ProjectStatus;
+  setStatus: (s: ProjectStatus) => void;
+  startTime: string;
+  setStartTime: (t: string) => void;
+  assignees: string[];
+  setAssignees: (ids: string[]) => void;
   location: PickedLocation | null;
   setLocation: (loc: PickedLocation) => void;
   isSaving: boolean;
@@ -33,6 +51,12 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   isCreating: false,
   title: "",
   setTitle: () => {},
+  status: 0,
+  setStatus: () => {},
+  startTime: "",
+  setStartTime: () => {},
+  assignees: [],
+  setAssignees: () => {},
   location: null,
   setLocation: () => {},
   isSaving: false,
@@ -47,6 +71,9 @@ const NewProjectContext = createContext<NewProjectContextValue>({
 export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [isCreating, setIsCreating] = useState(false);
   const [title, setTitle] = useState("");
+  const [status, setStatus] = useState<ProjectStatus>(0);
+  const [startTime, setStartTime] = useState("");
+  const [assignees, setAssignees] = useState<string[]>([]);
   const [location, setLocation] = useState<PickedLocation | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -55,6 +82,9 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const startCreating = useCallback(() => {
     setIsCreating(true);
     setTitle("");
+    setStatus(0);
+    setStartTime("");
+    setAssignees([]);
     setLocation(null);
     setSaveError(null);
     setSubmitRequested(false);
@@ -64,6 +94,9 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const cancelCreating = useCallback(() => {
     setIsCreating(false);
     setTitle("");
+    setStatus(0);
+    setStartTime("");
+    setAssignees([]);
     setLocation(null);
     setSaveError(null);
     setSubmitRequested(false);
@@ -84,6 +117,9 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     } else {
       setIsCreating(false);
       setTitle("");
+      setStatus(0);
+      setStartTime("");
+      setAssignees([]);
       setLocation(null);
       setIsSaving(false);
       setSaveError(null);
@@ -97,6 +133,12 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         isCreating,
         title,
         setTitle,
+        status,
+        setStatus,
+        startTime,
+        setStartTime,
+        assignees,
+        setAssignees,
         location,
         setLocation,
         isSaving,

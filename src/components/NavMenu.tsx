@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Button } from "@heroui/react";
 import { useOrg } from "@/context/OrgContext";
 
 const navItems = [
@@ -51,11 +52,13 @@ export default function NavMenu() {
       {/* Mobile header with hamburger */}
       <header className="flex h-14 items-center justify-between bg-gray-900 px-4 text-white md:hidden">
         <span className="text-lg font-semibold">Map Web App</span>
-        <button
+        <Button
+          isIconOnly
+          variant="light"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
-          onClick={() => setOpen((prev) => !prev)}
-          className="rounded-md p-2 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          onPress={() => setOpen((prev) => !prev)}
+          className="text-white hover:bg-gray-700"
         >
           {open ? (
             /* X icon */
@@ -92,7 +95,7 @@ export default function NavMenu() {
               />
             </svg>
           )}
-        </button>
+        </Button>
       </header>
 
       {/* Mobile dropdown menu */}

@@ -1,12 +1,22 @@
 "use client";
 
-import { useNewProject } from "@/context/NewProjectContext";
+import { useState, useEffect } from "react";
+import { Button, Input, Select, SelectItem } from "@heroui/react";
+import { useNewProject, PROJECT_STATUSES, type ProjectStatus } from "@/context/NewProjectContext";
 import { useDrawer } from "@/context/DrawerContext";
+import { useOrg } from "@/context/OrgContext";
+import { supabase, type OrganizationMember } from "@/lib/supabase";
 
 export default function CreateProjectForm() {
   const {
     title,
     setTitle,
+    status,
+    setStatus,
+    startTime,
+    setStartTime,
+    assignees,
+    setAssignees,
     location,
     isSaving,
     saveError,
@@ -14,6 +24,20 @@ export default function CreateProjectForm() {
   } = useNewProject();
 
   const { closeDrawer } = useDrawer();
+  const { activeOrg } = useOrg();
+
+  const [members, setMembers] = useState<OrganizationMember[]>([]);
+
+  useEffect(() => {
+    if (!activeOrg) return;
+    supabase
+      .from("organization_members")
+      .select("user_id, display_name, role")
+      .eq("organization_id", activeOrg.organization_id)
+      .then(({ data }) => {
+        if (data) setMembers(data as OrganizationMember[]);
+      });
+  }, [activeOrg]);
 
   const canSubmit = title.trim().length > 0 && location !== null && !isSaving;
 
@@ -28,19 +52,61 @@ export default function CreateProjectForm() {
         }}
         className="flex flex-col gap-4"
       >
-        {/* Title input */}
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-gray-700">Title</span>
-          <input
-            autoFocus
-            type="text"
-            placeholder="Enter project title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={isSaving}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-          />
-        </label>
+        <Input
+          autoFocus
+          label="Title"
+          placeholder="Enter project title"
+          value={title}
+          onValueChange={setTitle}
+          isDisabled={isSaving}
+          variant="bordered"
+        />
+
+        <Select
+          label="Status"
+          selectedKeys={new Set([String(status)])}
+          onSelectionChange={(keys) => {
+            if (typeof keys === "string") return;
+            const key = [...keys][0] as string | undefined;
+            if (key !== undefined) setStatus(Number(key) as ProjectStatus);
+          }}
+          isDisabled={isSaving}
+          variant="bordered"
+          disallowEmptySelection
+        >
+          {PROJECT_STATUSES.map((s) => (
+            <SelectItem key={String(s.value)}>{s.label}</SelectItem>
+          ))}
+        </Select>
+
+        <Input
+          label="Start time"
+          type="datetime-local"
+          value={startTime}
+          onValueChange={setStartTime}
+          isDisabled={isSaving}
+          variant="bordered"
+          placeholder="Select date and time"
+        />
+
+        <Select
+          label="Assignees"
+          selectionMode="multiple"
+          selectedKeys={new Set(assignees)}
+          onSelectionChange={(keys) => {
+            if (typeof keys === "string") return;
+            setAssignees([...keys] as string[]);
+          }}
+          isDisabled={isSaving || members.length === 0}
+          variant="bordered"
+          placeholder={members.length === 0 ? "No members found" : "Select assignees"}
+        >
+          {members.map((m) => (
+            <SelectItem key={m.user_id}>
+              {m.display_name ?? m.user_id}
+            </SelectItem>
+          ))}
+        </Select>
 
         {/* Location picker status */}
         <div
@@ -99,21 +165,23 @@ export default function CreateProjectForm() {
 
         {/* Actions */}
         <div className="flex flex-col gap-2 pt-1">
-          <button
+          <Button
             type="submit"
-            disabled={!canSubmit}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-40"
+            color="primary"
+            isDisabled={!canSubmit}
+            isLoading={isSaving}
+            fullWidth
           >
-            {isSaving ? "Creating project…" : "Create Project"}
-          </button>
-          <button
-            type="button"
-            onClick={closeDrawer}
-            disabled={isSaving}
-            className="w-full rounded-lg py-2 text-sm text-gray-500 transition-colors hover:text-gray-700 disabled:opacity-50"
+            Create Project
+          </Button>
+          <Button
+            variant="light"
+            onPress={closeDrawer}
+            isDisabled={isSaving}
+            fullWidth
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

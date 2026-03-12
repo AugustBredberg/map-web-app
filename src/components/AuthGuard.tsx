@@ -2,6 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@heroui/react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
@@ -17,7 +18,7 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-950">
-        <span className="text-sm text-gray-400">Loading…</span>
+        <Spinner color="white" />
       </div>
     );
   }

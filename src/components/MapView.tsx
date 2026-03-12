@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { Button } from "@heroui/react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { supabase, type MapObject } from "@/lib/supabase";
+import { supabase, type Project } from "@/lib/supabase";
 import { useOrg } from "@/context/OrgContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
@@ -12,11 +13,11 @@ import CreateProjectForm from "@/components/CreateProjectForm";
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
 const MAP_STYLE = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
 
-function addMarker(map: maplibregl.Map, obj: MapObject) {
-  if (!obj.location?.coordinates) return;
-  const [lng, lat] = obj.location.coordinates;
+function addMarker(map: maplibregl.Map, project: Project) {
+  if (!project.location?.coordinates) return;
+  const [lng, lat] = project.location.coordinates;
   const popup = new maplibregl.Popup({ offset: 12 }).setHTML(
-    `<strong class="text-sm">${obj.title}</strong>`
+    `<strong class="text-sm">${project.title}</strong>`
   );
   const marker = new maplibregl.Marker({ color: "#3b82f6" });
   marker.getElement().classList.add("project-marker");
@@ -38,6 +39,9 @@ export default function MapView() {
   const {
     isCreating,
     title: newProjectTitle,
+    status: newProjectStatus,
+    startTime: newProjectStartTime,
+    assignees: newProjectAssignees,
     location: pickedLocation,
     setLocation,
     submitRequested,
@@ -45,6 +49,14 @@ export default function MapView() {
     startCreating,
     cancelCreating,
   } = useNewProject();
+
+  // Keep status, startTime and assignees in refs so the submit effect always captures the latest values
+  const statusRef = useRef(newProjectStatus);
+  useEffect(() => { statusRef.current = newProjectStatus; }, [newProjectStatus]);
+  const startTimeRef = useRef(newProjectStartTime);
+  useEffect(() => { startTimeRef.current = newProjectStartTime; }, [newProjectStartTime]);
+  const assigneesRef = useRef(newProjectAssignees);
+  useEffect(() => { assigneesRef.current = newProjectAssignees; }, [newProjectAssignees]);
 
   const handleAddClick = useCallback(() => {
     startCreating();
@@ -75,13 +87,13 @@ export default function MapView() {
 
     map.once("load", async () => {
       const { data, error } = await supabase
-        .from("map_objects")
-        .select("id, created_at, user_id, title, location");
+        .from("projects")
+        .select("project_id, created_at, created_by, organization_id, title, location, project_status, start_time");
       if (error) {
-        console.error("Failed to load map_objects:", error.message);
+        console.error("Failed to load projects:", error.message);
         return;
       }
-      (data as MapObject[]).forEach((obj) => addMarker(map, obj));
+      (data as Project[]).forEach((p) => addMarker(map, p));
     });
 
     return () => {
@@ -132,29 +144,53 @@ export default function MapView() {
     let cancelled = false;
     const { lng, lat } = pickedLocation;
     const titleToSave = newProjectTitle;
+    const statusToSave = statusRef.current;
+    const startTimeToSave = startTimeRef.current || null;
+    const assigneesToSave = assigneesRef.current;
     const orgId = activeOrgRef.current?.organization_id ?? null;
 
     supabase
-      .from("map_objects")
+      .from("projects")
       .insert({
         title: titleToSave,
+        project_status: statusToSave,
+        start_time: startTimeToSave,
         location: `POINT(${lng} ${lat})`,
         organization_id: orgId,
       })
-      .select("id, created_at, user_id, title, location")
+      .select("project_id, created_at, created_by, organization_id, title, location, project_status, start_time")
       .single()
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (cancelled) return;
         if (error) {
-          console.error("Failed to save map object:", error.message);
+          console.error("Failed to save project:", error.message);
           onSubmitHandled(error.message);
-        } else {
-          tempMarkerRef.current?.remove();
-          tempMarkerRef.current = null;
-          if (mapRef.current) addMarker(mapRef.current, data as MapObject);
-          onSubmitHandled();
-          closeDrawer();
+          return;
         }
+
+        const project = data as Project;
+
+        // Insert assignees into project_assignees if any were selected
+        if (assigneesToSave.length > 0) {
+          const { error: assigneeError } = await supabase
+            .from("project_assignees")
+            .insert(
+              assigneesToSave.map((userId) => ({
+                project_id: project.project_id,
+                user_id: userId,
+                organization_id: orgId,
+              }))
+            );
+          if (assigneeError) {
+            console.error("Failed to save assignees:", assigneeError.message);
+          }
+        }
+
+        tempMarkerRef.current?.remove();
+        tempMarkerRef.current = null;
+        if (mapRef.current) addMarker(mapRef.current, project);
+        onSubmitHandled();
+        closeDrawer();
       });
 
     return () => { cancelled = true; };
@@ -168,10 +204,14 @@ export default function MapView() {
 
       {/* Floating + button — hidden while the drawer is open or creation is in progress */}
       {!isCreating && !drawerOpen && (
-        <button
-          onClick={handleAddClick}
+        <Button
+          isIconOnly
+          color="primary"
+          radius="full"
+          size="lg"
+          onPress={handleAddClick}
           aria-label="Add map object"
-          className="absolute bottom-24 left-4 flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          className="absolute bottom-24 left-4 shadow-lg"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -187,7 +227,7 @@ export default function MapView() {
               d="M12 4v16m8-8H4"
             />
           </svg>
-        </button>
+        </Button>
       )}
 
       {/* Map hint — nudge the user to click the map when no location is set yet */}

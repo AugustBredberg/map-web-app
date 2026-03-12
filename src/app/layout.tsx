@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Providers from "@/components/Providers";
 import { AuthProvider } from "@/context/AuthContext";
 import { OrgProvider } from "@/context/OrgContext";
 import { DrawerProvider } from "@/context/DrawerContext";
@@ -19,7 +20,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <AuthProvider>
+        <Providers>
+          <AuthProvider>
           <OrgProvider>
             <DrawerProvider>
               <NewProjectProvider>
@@ -29,6 +31,7 @@ export default function RootLayout({
             </DrawerProvider>
           </OrgProvider>
         </AuthProvider>
+        </Providers>
       </body>
     </html>
   );
