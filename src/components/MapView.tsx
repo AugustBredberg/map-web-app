@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase, type MapObject } from "@/lib/supabase";
 import { useOrg } from "@/context/OrgContext";
+import { useDrawer } from "@/context/DrawerContext";
+import { useNewProject } from "@/context/NewProjectContext";
+import CreateProjectForm from "@/components/CreateProjectForm";
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
 const MAP_STYLE = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
@@ -15,55 +18,40 @@ function addMarker(map: maplibregl.Map, obj: MapObject) {
   const popup = new maplibregl.Popup({ offset: 12 }).setHTML(
     `<strong class="text-sm">${obj.title}</strong>`
   );
-  new maplibregl.Marker({ color: "#3b82f6" })
-    .setLngLat([lng, lat])
-    .setPopup(popup)
-    .addTo(map);
+  const marker = new maplibregl.Marker({ color: "#3b82f6" });
+  marker.getElement().classList.add("project-marker");
+  marker.setLngLat([lng, lat]).setPopup(popup).addTo(map);
 }
-
-type Mode = "idle" | "form" | "placing" | "saving";
 
 export default function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const tempMarkerRef = useRef<maplibregl.Marker | null>(null);
 
   const { activeOrg } = useOrg();
   // Keep activeOrg in a ref so the map click handler always captures the latest value
   const activeOrgRef = useRef(activeOrg);
   useEffect(() => { activeOrgRef.current = activeOrg; }, [activeOrg]);
 
-  const [mode, setMode] = useState<Mode>("idle");
-  const [title, setTitle] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { openDrawer, closeDrawer, isOpen: drawerOpen } = useDrawer();
 
-  // Pending title kept in a ref so the map click handler always sees the latest value
-  const pendingTitle = useRef("");
+  const {
+    isCreating,
+    title: newProjectTitle,
+    location: pickedLocation,
+    setLocation,
+    submitRequested,
+    onSubmitHandled,
+    startCreating,
+    cancelCreating,
+  } = useNewProject();
 
-  // Cancel placing mode
-  const cancel = useCallback(() => {
-    setMode("idle");
-    setTitle("");
-    setError(null);
-    if (mapRef.current) {
-      mapRef.current.getCanvas().style.cursor = "";
-    }
-  }, []);
+  const handleAddClick = useCallback(() => {
+    startCreating();
+    openDrawer(<CreateProjectForm />, { onClose: cancelCreating, backdrop: false });
+  }, [startCreating, openDrawer, cancelCreating]);
 
-  // After the user confirms the title, switch to placing mode
-  const startPlacing = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!title.trim()) return;
-      pendingTitle.current = title.trim();
-      setMode("placing");
-      setError(null);
-      if (mapRef.current) {
-        mapRef.current.getCanvas().style.cursor = "crosshair";
-      }
-    },
-    [title]
-  );
-
+  // Map initialisation
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -102,56 +90,86 @@ export default function MapView() {
     };
   }, []);
 
-  // Attach/detach the click-to-place handler whenever mode changes
+  // Crosshair cursor + click handler while the user is picking a location
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !isCreating) return;
 
-    if (mode !== "placing") return;
+    map.getCanvas().style.cursor = "crosshair";
 
-    const handleClick = async (e: maplibregl.MapMouseEvent) => {
+    const handleClick = (e: maplibregl.MapMouseEvent) => {
       const { lng, lat } = e.lngLat;
-      map.getCanvas().style.cursor = "";
-      setMode("saving");
-
-      const { data, error } = await supabase
-        .from("map_objects")
-        .insert({
-          title: pendingTitle.current,
-          // PostGIS POINT — WKT format is accepted by the REST API
-          location: `POINT(${lng} ${lat})`,
-          organization_id: activeOrgRef.current?.organization_id ?? null,
-        })
-        .select("id, created_at, user_id, title, location")
-        .single();
-
-      if (error) {
-        console.error("Failed to save map object:", error.message);
-        setError(error.message);
-        setMode("form");
-        return;
+      setLocation({ lng, lat });
+      if (tempMarkerRef.current) {
+        tempMarkerRef.current.setLngLat([lng, lat]);
+      } else {
+        const marker = new maplibregl.Marker({ color: "#f59e0b" });
+        marker.getElement().classList.add("temp-pin");
+        marker.setLngLat([lng, lat]).addTo(map);
+        tempMarkerRef.current = marker;
       }
-
-      addMarker(map, data as MapObject);
-      setMode("idle");
-      setTitle("");
-      setError(null);
     };
 
-    map.once("click", handleClick);
+    map.on("click", handleClick);
     return () => {
       map.off("click", handleClick);
+      map.getCanvas().style.cursor = "";
     };
-  }, [mode]);
+  }, [isCreating, setLocation]);
+
+  // Remove the temp pin whenever the creation flow ends
+  useEffect(() => {
+    if (!isCreating) {
+      tempMarkerRef.current?.remove();
+      tempMarkerRef.current = null;
+    }
+  }, [isCreating]);
+
+  // Watch for the form's "Create Project" submission and run the DB insert
+  useEffect(() => {
+    if (!submitRequested || !pickedLocation) return;
+
+    let cancelled = false;
+    const { lng, lat } = pickedLocation;
+    const titleToSave = newProjectTitle;
+    const orgId = activeOrgRef.current?.organization_id ?? null;
+
+    supabase
+      .from("map_objects")
+      .insert({
+        title: titleToSave,
+        location: `POINT(${lng} ${lat})`,
+        organization_id: orgId,
+      })
+      .select("id, created_at, user_id, title, location")
+      .single()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error("Failed to save map object:", error.message);
+          onSubmitHandled(error.message);
+        } else {
+          tempMarkerRef.current?.remove();
+          tempMarkerRef.current = null;
+          if (mapRef.current) addMarker(mapRef.current, data as MapObject);
+          onSubmitHandled();
+          closeDrawer();
+        }
+      });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitRequested]);
+
 
   return (
-    <div className="relative h-full w-full">
+    <div className={`relative h-full w-full${isCreating ? " map-creating" : ""}`}>
       <div ref={containerRef} className="h-full w-full" />
 
-      {/* Floating + button */}
-      {mode === "idle" && (
+      {/* Floating + button — hidden while the drawer is open or creation is in progress */}
+      {!isCreating && !drawerOpen && (
         <button
-          onClick={() => setMode("form")}
+          onClick={handleAddClick}
           aria-label="Add map object"
           className="absolute bottom-24 left-4 flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
@@ -172,59 +190,10 @@ export default function MapView() {
         </button>
       )}
 
-      {/* Title form */}
-      {(mode === "form" || mode === "saving") && (
-        <div className="absolute bottom-24 left-4 w-64 rounded-xl bg-gray-900 p-4 shadow-xl ring-1 ring-white/10">
-          <p className="mb-3 text-sm font-semibold text-white">
-            New map object
-          </p>
-          <form onSubmit={startPlacing} className="flex flex-col gap-3">
-            <input
-              autoFocus
-              type="text"
-              placeholder="Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="rounded-lg bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none ring-1 ring-white/10 focus:ring-blue-500"
-            />
-            {error && (
-              <p className="text-xs text-red-400">{error}</p>
-            )}
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={!title.trim() || mode === "saving"}
-                className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-40"
-              >
-                Place on map
-              </button>
-              <button
-                type="button"
-                onClick={cancel}
-                className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-white"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Placing hint */}
-      {mode === "placing" && (
-        <div className="absolute bottom-24 left-4 flex items-center gap-3 rounded-xl bg-gray-900 px-4 py-3 shadow-xl ring-1 ring-white/10">
-          <span className="text-sm text-gray-200">
-            Click on the map to place{" "}
-            <strong className="text-white">
-              &ldquo;{title}&rdquo;
-            </strong>
-          </span>
-          <button
-            onClick={cancel}
-            className="text-xs text-gray-400 hover:text-white"
-          >
-            Cancel
-          </button>
+      {/* Map hint — nudge the user to click the map when no location is set yet */}
+      {isCreating && !pickedLocation && (
+        <div className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 rounded-xl bg-gray-900/80 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+          <span className="text-sm text-white">Tap the map to set a location</span>
         </div>
       )}
     </div>

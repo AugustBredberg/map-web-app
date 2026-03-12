@@ -22,3 +22,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Dim existing project markers while a new project is being created */
+.map-creating .project-marker {
+  opacity: 0.25;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}

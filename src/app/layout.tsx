@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { OrgProvider } from "@/context/OrgContext";
+import { DrawerProvider } from "@/context/DrawerContext";
+import { NewProjectProvider } from "@/context/NewProjectContext";
+import Drawer from "@/components/Drawer";
 
 export const metadata: Metadata = {
   title: "Map Web App",
@@ -17,7 +20,14 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthProvider>
-          <OrgProvider>{children}</OrgProvider>
+          <OrgProvider>
+            <DrawerProvider>
+              <NewProjectProvider>
+                {children}
+                <Drawer />
+              </NewProjectProvider>
+            </DrawerProvider>
+          </OrgProvider>
         </AuthProvider>
       </body>
     </html>
