@@ -53,7 +53,7 @@ export default function Drawer() {
           // Base positioning – mobile: full-width bottom sheet
           "fixed bottom-0 left-0 right-0 z-50",
           // Mobile sizing – flex column so header stays fixed and content scrolls
-          "flex flex-col max-h-[50vh]",
+          "flex flex-col max-h-[60vh]",
           // Desktop overrides – full-height right panel
           "md:left-auto md:bottom-auto md:top-0 md:right-0 md:h-full md:max-h-none md:w-96",
           // Shape

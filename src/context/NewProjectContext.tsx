@@ -8,15 +8,10 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { type ZonedDateTime, parseAbsoluteToLocal } from "@internationalized/date";
 import type { Project } from "@/lib/supabase";
 import { createProject, updateProject, deleteProject as deleteProjectLib } from "@/lib/projects";
 import { useOrg } from "@/context/OrgContext";
-
-function toDatetimeLocal(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export interface PickedLocation {
   lng: number;
@@ -47,8 +42,8 @@ interface NewProjectContextValue {
   setEstimatedTime: (t: string) => void;
   status: ProjectStatus;
   setStatus: (s: ProjectStatus) => void;
-  startTime: string;
-  setStartTime: (t: string) => void;
+  startTime: ZonedDateTime | null;
+  setStartTime: (t: ZonedDateTime | null) => void;
   assignees: string[];
   setAssignees: (ids: string[]) => void;
   location: PickedLocation | null;
@@ -83,7 +78,7 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   setEstimatedTime: () => {},
   status: 0,
   setStatus: () => {},
-  startTime: "",
+  startTime: null,
   setStartTime: () => {},
   assignees: [],
   setAssignees: () => {},
@@ -113,7 +108,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [description, setDescription] = useState("");
   const [estimatedTime, setEstimatedTime] = useState("");
   const [status, setStatus] = useState<ProjectStatus>(0);
-  const [startTime, setStartTime] = useState("");
+  const [startTime, setStartTime] = useState<ZonedDateTime | null>(null);
   const [assignees, setAssignees] = useState<string[]>([]);
   const [location, setLocation] = useState<PickedLocation | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -137,7 +132,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setDescription("");
     setEstimatedTime("");
     setStatus(0);
-    setStartTime("");
+    setStartTime(null);
     setAssignees([]);
     setLocation(null);
     setSaveError(null);
@@ -182,7 +177,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setDescription(project.description ?? "");
     setEstimatedTime(project.estimated_time != null ? String(project.estimated_time) : "");
     setStatus((project.project_status ?? 0) as ProjectStatus);
-    setStartTime(project.start_time ? toDatetimeLocal(project.start_time) : "");
+    setStartTime(project.start_time ? parseAbsoluteToLocal(project.start_time) : null);
     setAssignees(initialAssignees);
     if (project.location?.coordinates) {
       const [lng, lat] = project.location.coordinates;
@@ -207,7 +202,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
 
     const { lng, lat } = location;
     const orgId = activeOrg?.organization_id ?? null;
-    const startTimeToSave = startTime || null;
+    const startTimeToSave = startTime ? startTime.toDate().toISOString() : null;
     const descToSave = description.trim() || null;
     const estTimeToSave = estimatedTime ? Number(estimatedTime) : null;
 

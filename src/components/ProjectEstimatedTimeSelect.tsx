@@ -113,7 +113,7 @@ export default function ProjectEstimatedTimeSelect({ value, onChange, isDisabled
           <Input
             ref={customInputRef}
             type="number"
-            placeholder="Hours, e.g. 1.5"
+            placeholder="-"
             value={value}
             onValueChange={onChange}
             isDisabled={isDisabled}
