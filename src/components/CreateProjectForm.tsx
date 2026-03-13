@@ -1,18 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Input, Select, SelectItem } from "@heroui/react";
-import { useNewProject, PROJECT_STATUSES, type ProjectStatus } from "@/context/NewProjectContext";
+import { Button, Input, Select, SelectItem, Textarea } from "@heroui/react";
+import { useNewProject } from "@/context/NewProjectContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
 import { getOrgMembers } from "@/lib/members";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import ProjectStatusSelect from "@/components/ProjectStatusSelect";
+import ProjectEstimatedTimeSelect from "@/components/ProjectEstimatedTimeSelect";
 import type { OrganizationMember } from "@/lib/supabase";
 
 export default function CreateProjectForm({ mode = "create" }: { mode?: "create" | "edit" }) {
   const {
     title,
     setTitle,
+    description,
+    setDescription,
+    estimatedTime,
+    setEstimatedTime,
     status,
     setStatus,
     startTime,
@@ -62,22 +68,27 @@ export default function CreateProjectForm({ mode = "create" }: { mode?: "create"
           variant="bordered"
         />
 
-        <Select
-          label="Status"
-          selectedKeys={new Set([String(status)])}
-          onSelectionChange={(keys) => {
-            if (typeof keys === "string") return;
-            const key = [...keys][0] as string | undefined;
-            if (key !== undefined) setStatus(Number(key) as ProjectStatus);
-          }}
+        <Textarea
+          label="Description"
+          placeholder="Enter project description"
+          value={description}
+          onValueChange={setDescription}
           isDisabled={isSaving}
           variant="bordered"
-          disallowEmptySelection
-        >
-          {PROJECT_STATUSES.map((s) => (
-            <SelectItem key={String(s.value)}>{s.label}</SelectItem>
-          ))}
-        </Select>
+          minRows={3}
+        />
+
+        <ProjectEstimatedTimeSelect
+          value={estimatedTime}
+          onChange={setEstimatedTime}
+          isDisabled={isSaving}
+        />
+
+        <ProjectStatusSelect
+          value={status}
+          onChange={setStatus}
+          isDisabled={isSaving}
+        />
 
         <Input
           label="Start time"

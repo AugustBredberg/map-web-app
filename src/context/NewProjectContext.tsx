@@ -41,6 +41,10 @@ interface NewProjectContextValue {
   editingProjectId: string | null;
   title: string;
   setTitle: (t: string) => void;
+  description: string;
+  setDescription: (d: string) => void;
+  estimatedTime: string;
+  setEstimatedTime: (t: string) => void;
   status: ProjectStatus;
   setStatus: (s: ProjectStatus) => void;
   startTime: string;
@@ -73,6 +77,10 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   editingProjectId: null,
   title: "",
   setTitle: () => {},
+  description: "",
+  setDescription: () => {},
+  estimatedTime: "",
+  setEstimatedTime: () => {},
   status: 0,
   setStatus: () => {},
   startTime: "",
@@ -102,6 +110,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [estimatedTime, setEstimatedTime] = useState("");
   const [status, setStatus] = useState<ProjectStatus>(0);
   const [startTime, setStartTime] = useState("");
   const [assignees, setAssignees] = useState<string[]>([]);
@@ -124,6 +134,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
 
   const resetFormState = useCallback(() => {
     setTitle("");
+    setDescription("");
+    setEstimatedTime("");
     setStatus(0);
     setStartTime("");
     setAssignees([]);
@@ -167,6 +179,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setIsEditing(true);
     setEditingProjectId(project.project_id);
     setTitle(project.title);
+    setDescription(project.description ?? "");
+    setEstimatedTime(project.estimated_time != null ? String(project.estimated_time) : "");
     setStatus((project.project_status ?? 0) as ProjectStatus);
     setStartTime(project.start_time ? toDatetimeLocal(project.start_time) : "");
     setAssignees(initialAssignees);
@@ -194,12 +208,16 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     const { lng, lat } = location;
     const orgId = activeOrg?.organization_id ?? null;
     const startTimeToSave = startTime || null;
+    const descToSave = description.trim() || null;
+    const estTimeToSave = estimatedTime ? Number(estimatedTime) : null;
 
     if (isEditing && editingProjectId) {
       const { data: project, error } = await updateProject(
         editingProjectId,
         {
           title,
+          description: descToSave,
+          estimated_time: estTimeToSave,
           project_status: status,
           start_time: startTimeToSave,
           location: `POINT(${lng} ${lat})`,
@@ -223,6 +241,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
       const { data: project, error } = await createProject(
         {
           title,
+          description: descToSave,
+          estimated_time: estTimeToSave,
           project_status: status,
           start_time: startTimeToSave,
           location: `POINT(${lng} ${lat})`,
@@ -242,7 +262,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
       resetFormState();
       if (project) onProjectSavedRef.current?.(project);
     }
-  }, [location, activeOrg, startTime, isEditing, editingProjectId, title, status, assignees, resetFormState]);
+  }, [location, activeOrg, startTime, isEditing, editingProjectId, title, description, estimatedTime, status, assignees, resetFormState]);
 
   return (
     <NewProjectContext.Provider
@@ -252,6 +272,10 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         editingProjectId,
         title,
         setTitle,
+        description,
+        setDescription,
+        estimatedTime,
+        setEstimatedTime,
         status,
         setStatus,
         startTime,

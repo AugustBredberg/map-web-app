@@ -3,22 +3,18 @@
 import { useEffect, useState } from "react";
 import { Button } from "@heroui/react";
 
-import { PROJECT_STATUSES } from "@/context/NewProjectContext";
 import { useOrg } from "@/context/OrgContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
 import { getProjectAssignees } from "@/lib/members";
 import CreateProjectForm from "@/components/CreateProjectForm";
+import ProjectStatusBadge from "@/components/ProjectStatusBadge";
 import type { Project } from "@/lib/supabase";
+import type { ProjectStatus } from "@/context/NewProjectContext";
 
 interface Props {
   project: Project;
   onEditClose?: () => void;
-}
-
-function statusLabel(value: number | null) {
-  if (value === null) return "—";
-  return PROJECT_STATUSES.find((s) => s.value === value)?.label ?? String(value);
 }
 
 function formatDateTime(iso: string | null) {
@@ -58,13 +54,17 @@ export default function ProjectDetailsPanel({ project, onEditClose }: Props) {
   };
 
   const fields = [
-    { label: "Status", value: statusLabel(project.project_status) },
+    { label: "Description", value: project.description || "—" },
+    { label: "Estimated time", value: project.estimated_time != null ? `${project.estimated_time} h` : "—" },
     { label: "Start time", value: formatDateTime(project.start_time) },
     { label: "Created", value: formatDateTime(project.created_at) },
   ];
 
   return (
     <div className="flex flex-col gap-4">
+      {project.project_status != null && (
+        <ProjectStatusBadge status={project.project_status as ProjectStatus} />
+      )}
       {fields.map(({ label, value }) => (
         <div key={label}>
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>

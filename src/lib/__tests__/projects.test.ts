@@ -11,6 +11,8 @@ const sampleProject = {
   expected_hours: null,
   project_status: 0,
   title: "Test Project",
+  description: null,
+  estimated_time: null,
   location: { type: "Point" as const, coordinates: [11.97, 57.70] as [number, number] },
 };
 
@@ -41,6 +43,8 @@ describe("createProject", () => {
     const { data, error } = await createProject(
       {
         title: "Test Project",
+        description: null,
+        estimated_time: null,
         project_status: 0,
         start_time: null,
         location: "POINT(11.97 57.70)",
@@ -63,6 +67,8 @@ describe("createProject", () => {
     const { data, error } = await createProject(
       {
         title: "Fail",
+        description: null,
+        estimated_time: null,
         project_status: 0,
         start_time: null,
         location: "POINT(0 0)",
@@ -88,6 +94,8 @@ describe("updateProject", () => {
       "p1",
       {
         title: "Updated",
+        description: null,
+        estimated_time: null,
         project_status: 1,
         start_time: null,
         location: "POINT(11.97 57.70)",
@@ -107,7 +115,7 @@ describe("updateProject", () => {
     const client = mockClient({ data: null, error: { message: "not found" } });
     const { data, error } = await updateProject(
       "p1",
-      { title: "X", project_status: 0, start_time: null, location: "POINT(0 0)" },
+      { title: "X", description: null, estimated_time: null, project_status: 0, start_time: null, location: "POINT(0 0)" },
       [],
       null,
       client,
