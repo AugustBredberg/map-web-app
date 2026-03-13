@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@heroui/react";
-import { supabase } from "@/lib/supabase";
+import { signInWithPassword, signUp } from "@/lib/auth";
 
 type AuthMode = "signin" | "signup";
 
@@ -23,19 +23,16 @@ export default function LoginPage() {
     setLoading(true);
 
     if (mode === "signin") {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await signInWithPassword(email, password);
       if (error) {
-        setError(error.message);
+        setError(error);
       } else {
         router.push("/map");
       }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await signUp(email, password);
       if (error) {
-        setError(error.message);
+        setError(error);
       } else {
         setMessage(
           "Check your email for a confirmation link, then sign in."

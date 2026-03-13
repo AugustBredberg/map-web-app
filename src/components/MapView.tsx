@@ -5,72 +5,29 @@ import { Button } from "@heroui/react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type Project } from "@/lib/supabase";
-import { fetchProjects, createProject, updateProject } from "@/lib/projects";
-import { useOrg } from "@/context/OrgContext";
+import { fetchProjects } from "@/lib/projects";
 import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
+import { useProjectMarkers } from "@/hooks/useProjectMarkers";
+import { useLocationPicker } from "@/hooks/useLocationPicker";
 import CreateProjectForm from "@/components/CreateProjectForm";
 import ProjectDetailsPanel from "@/components/ProjectDetailsPanel";
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
 const MAP_STYLE = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
 
-function addMarker(
-  map: maplibregl.Map,
-  project: Project,
-  markersMap: Map<string, HTMLElement>,
-  markerObjectsMap: Map<string, maplibregl.Marker>,
-  onClickProject: (project: Project) => void,
-) {
-  if (!project.location?.coordinates) return;
-  const [lng, lat] = project.location.coordinates;
-  const marker = new maplibregl.Marker({ color: "#3b82f6" });
-  const el = marker.getElement();
-  el.classList.add("project-marker");
-  el.style.cursor = "pointer";
-  // Scale the inner SVG only — the root element's transform is owned by MapLibre for positioning
-  const pin = el.firstElementChild as HTMLElement;
-  pin.style.transition = "transform 0.15s ease";
-  pin.style.transformOrigin = "bottom center";
-  markersMap.set(project.project_id, pin);
-  markerObjectsMap.set(project.project_id, marker);
-  el.addEventListener("click", (e) => {
-    e.stopPropagation();
-    onClickProject(project);
-  });
-  marker.setLngLat([lng, lat]).addTo(map);
-}
-
 export default function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const tempMarkerRef = useRef<maplibregl.Marker | null>(null);
-
-  const { activeOrg } = useOrg();
-  // Keep activeOrg in a ref so the map click handler always captures the latest value
-  const activeOrgRef = useRef(activeOrg);
-  useEffect(() => { activeOrgRef.current = activeOrg; }, [activeOrg]);
 
   const { openDrawer, closeDrawer, isOpen: drawerOpen } = useDrawer();
   const openDrawerRef = useRef(openDrawer);
   useEffect(() => { openDrawerRef.current = openDrawer; }, [openDrawer]);
 
-  const markersMapRef = useRef(new Map<string, HTMLElement>());
-  const markerObjectsMapRef = useRef(new Map<string, maplibregl.Marker>());
-  const selectedProjectIdRef = useRef<string | null>(null);
-
-  const applySelectionRef = useRef(() => {
-    const selectedId = selectedProjectIdRef.current;
-    markersMapRef.current.forEach((el, id) => {
-      el.style.transform = id === selectedId ? "scale(1.4)" : "";
-    });
-  });
-
   const handleProjectClickRef = useRef((project: Project) => {
-    selectedProjectIdRef.current = project.project_id;
-    applySelectionRef.current();
+    markers.selectedProjectIdRef.current = project.project_id;
+    markers.applySelection();
 
-    // On mobile, pan so the pin sits at 25% from the top (above the 50% drawer)
     if (window.innerWidth < 768 && project.location?.coordinates && mapRef.current) {
       const [lng, lat] = project.location.coordinates;
       mapRef.current.easeTo({
@@ -81,45 +38,52 @@ export default function MapView() {
     }
 
     openDrawerRef.current(<ProjectDetailsPanel project={project} onEditClose={() => {
-      selectedProjectIdRef.current = null;
-      applySelectionRef.current();
+      markers.selectedProjectIdRef.current = null;
+      markers.applySelection();
     }} />, {
       title: project.title,
       backdrop: false,
       onClose: () => {
-        selectedProjectIdRef.current = null;
-        applySelectionRef.current();
+        markers.selectedProjectIdRef.current = null;
+        markers.applySelection();
       },
     });
   });
+
+  const markers = useProjectMarkers(handleProjectClickRef);
 
   const {
     isCreating,
     isEditing,
     editingProjectId,
-    title: newProjectTitle,
-    status: newProjectStatus,
-    startTime: newProjectStartTime,
-    assignees: newProjectAssignees,
     location: pickedLocation,
     setLocation,
-    submitRequested,
-    onSubmitHandled,
     startCreating,
     cancelCreating,
+    setOnProjectSaved,
   } = useNewProject();
 
-  // Keep status, startTime and assignees in refs so the submit effect always captures the latest values
-  const statusRef = useRef(newProjectStatus);
-  useEffect(() => { statusRef.current = newProjectStatus; }, [newProjectStatus]);
-  const startTimeRef = useRef(newProjectStartTime);
-  useEffect(() => { startTimeRef.current = newProjectStartTime; }, [newProjectStartTime]);
-  const assigneesRef = useRef(newProjectAssignees);
-  useEffect(() => { assigneesRef.current = newProjectAssignees; }, [newProjectAssignees]);
-  const isEditingRef = useRef(isEditing);
-  useEffect(() => { isEditingRef.current = isEditing; }, [isEditing]);
+  const isPickerActive = isCreating || isEditing;
+  const tempMarkerRef = useLocationPicker(mapRef, isPickerActive, setLocation, isEditing ? pickedLocation : null);
+
+  // Register a callback so the context can notify us after a successful save
   const editingProjectIdRef = useRef(editingProjectId);
   useEffect(() => { editingProjectIdRef.current = editingProjectId; }, [editingProjectId]);
+
+  useEffect(() => {
+    setOnProjectSaved((project: Project) => {
+      if (editingProjectIdRef.current) {
+        markers.removeProjectMarker(editingProjectIdRef.current);
+      }
+      tempMarkerRef.current?.remove();
+      tempMarkerRef.current = null;
+      if (mapRef.current) {
+        markers.addProjectMarker(mapRef.current, project);
+      }
+      closeDrawer();
+    });
+    return () => setOnProjectSaved(null);
+  }, [setOnProjectSaved, closeDrawer, markers, tempMarkerRef]);
 
   const handleAddClick = useCallback(() => {
     startCreating();
@@ -133,7 +97,7 @@ export default function MapView() {
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: MAP_STYLE,
-      center: [11.9746, 57.7089], // Gothenburg, Sweden
+      center: [11.9746, 57.7089],
       zoom: 10,
     });
 
@@ -147,10 +111,8 @@ export default function MapView() {
     );
 
     mapRef.current = map;
-    const markersMap = markersMapRef.current;
-    const markerObjects = markerObjectsMapRef.current;
 
-    map.on("render", () => applySelectionRef.current());
+    map.on("render", () => markers.applySelection());
 
     map.once("load", async () => {
       const { data, error } = await fetchProjects();
@@ -158,142 +120,18 @@ export default function MapView() {
         console.error("Failed to load projects:", error);
         return;
       }
-      (data as Project[]).forEach((p) => addMarker(map, p, markersMap, markerObjects, handleProjectClickRef.current));
+      markers.loadProjects(map, data as Project[]);
     });
 
     return () => {
       map.remove();
       mapRef.current = null;
-      markersMap.clear();
-      markerObjects.clear();
+      markers.markersMapRef.current.clear();
+      markers.markerObjectsMapRef.current.clear();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Crosshair cursor + click handler while the user is picking a location
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || (!isCreating && !isEditing)) return;
-
-    map.getCanvas().style.cursor = "crosshair";
-
-    const handleClick = (e: maplibregl.MapMouseEvent) => {
-      const { lng, lat } = e.lngLat;
-      setLocation({ lng, lat });
-      if (tempMarkerRef.current) {
-        tempMarkerRef.current.setLngLat([lng, lat]);
-      } else {
-        const marker = new maplibregl.Marker({ color: "#f59e0b" });
-        marker.getElement().classList.add("temp-pin");
-        marker.setLngLat([lng, lat]).addTo(map);
-        tempMarkerRef.current = marker;
-      }
-    };
-
-    map.on("click", handleClick);
-    return () => {
-      map.off("click", handleClick);
-      map.getCanvas().style.cursor = "";
-    };
-  }, [isCreating, isEditing, setLocation]);
-
-  // Place a temp marker at the project's existing location when editing starts
-  useEffect(() => {
-    if (!isEditing || !pickedLocation || !mapRef.current) return;
-    if (tempMarkerRef.current) return; // already placed
-    const marker = new maplibregl.Marker({ color: "#f59e0b" });
-    marker.getElement().classList.add("temp-pin");
-    marker.setLngLat([pickedLocation.lng, pickedLocation.lat]).addTo(mapRef.current);
-    tempMarkerRef.current = marker;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditing]);
-
-  // Remove the temp pin whenever neither creation nor edit flow is active
-  useEffect(() => {
-    if (!isCreating && !isEditing) {
-      tempMarkerRef.current?.remove();
-      tempMarkerRef.current = null;
-    }
-  }, [isCreating, isEditing]);
-
-  // Watch for form submission and run the DB insert (create) or update (edit)
-  useEffect(() => {
-    if (!submitRequested || !pickedLocation) return;
-
-    let cancelled = false;
-    const { lng, lat } = pickedLocation;
-    const titleToSave = newProjectTitle;
-    const statusToSave = statusRef.current;
-    const startTimeToSave = startTimeRef.current || null;
-    const assigneesToSave = assigneesRef.current;
-    const orgId = activeOrgRef.current?.organization_id ?? null;
-
-    const run = async () => {
-      if (isEditingRef.current && editingProjectIdRef.current) {
-        // Edit flow — UPDATE existing project
-        const projectId = editingProjectIdRef.current;
-        const { data: project, error } = await updateProject(
-          projectId,
-          {
-            title: titleToSave,
-            project_status: statusToSave,
-            start_time: startTimeToSave,
-            location: `POINT(${lng} ${lat})`,
-          },
-          assigneesToSave,
-          orgId,
-        );
-
-        if (cancelled) return;
-        if (error) {
-          console.error("Failed to update project:", error);
-          onSubmitHandled(error);
-          return;
-        }
-
-        // Replace the map marker with updated data
-        const oldMarker = markerObjectsMapRef.current.get(projectId);
-        if (oldMarker) {
-          oldMarker.remove();
-          markerObjectsMapRef.current.delete(projectId);
-          markersMapRef.current.delete(projectId);
-        }
-        tempMarkerRef.current?.remove();
-        tempMarkerRef.current = null;
-        if (mapRef.current) addMarker(mapRef.current, project!, markersMapRef.current, markerObjectsMapRef.current, handleProjectClickRef.current);
-        onSubmitHandled();
-        closeDrawer();
-      } else {
-        // Create flow — INSERT new project
-        const { data: project, error } = await createProject(
-          {
-            title: titleToSave,
-            project_status: statusToSave,
-            start_time: startTimeToSave,
-            location: `POINT(${lng} ${lat})`,
-            organization_id: orgId,
-          },
-          assigneesToSave,
-        );
-
-        if (cancelled) return;
-        if (error) {
-          console.error("Failed to save project:", error);
-          onSubmitHandled(error);
-          return;
-        }
-
-        tempMarkerRef.current?.remove();
-        tempMarkerRef.current = null;
-        if (mapRef.current) addMarker(mapRef.current, project!, markersMapRef.current, markerObjectsMapRef.current, handleProjectClickRef.current);
-        onSubmitHandled();
-        closeDrawer();
-      }
-    };
-
-    run();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitRequested]);
 
 
   return (

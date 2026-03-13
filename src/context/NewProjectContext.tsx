@@ -5,9 +5,12 @@ import {
   useContext,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import type { Project } from "@/lib/supabase";
+import { createProject, updateProject } from "@/lib/projects";
+import { useOrg } from "@/context/OrgContext";
 
 function toDatetimeLocal(iso: string): string {
   const d = new Date(iso);
@@ -48,14 +51,14 @@ interface NewProjectContextValue {
   setLocation: (loc: PickedLocation) => void;
   isSaving: boolean;
   saveError: string | null;
-  submitRequested: boolean;
   startCreating: () => void;
   cancelCreating: () => void;
   startEditing: (project: Project, initialAssignees: string[]) => void;
   cancelEditing: () => void;
-  requestSubmit: () => void;
-  /** Called by MapView after the save attempt completes. Pass an error message on failure. */
-  onSubmitHandled: (error?: string) => void;
+  /** Run the save (create or update) and call onProjectSaved on success. */
+  submitProject: () => Promise<void>;
+  /** Register a callback that receives the saved project after a successful submit. */
+  setOnProjectSaved: (cb: ((project: Project) => void) | null) => void;
 }
 
 const NewProjectContext = createContext<NewProjectContextValue>({
@@ -74,16 +77,17 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   setLocation: () => {},
   isSaving: false,
   saveError: null,
-  submitRequested: false,
   startCreating: () => {},
   cancelCreating: () => {},
   startEditing: () => {},
   cancelEditing: () => {},
-  requestSubmit: () => {},
-  onSubmitHandled: () => {},
+  submitProject: async () => {},
+  setOnProjectSaved: () => {},
 });
 
 export function NewProjectProvider({ children }: { children: ReactNode }) {
+  const { activeOrg } = useOrg();
+
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -94,31 +98,32 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [location, setLocation] = useState<PickedLocation | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [submitRequested, setSubmitRequested] = useState(false);
+
+  const onProjectSavedRef = useRef<((project: Project) => void) | null>(null);
+
+  const setOnProjectSaved = useCallback((cb: ((project: Project) => void) | null) => {
+    onProjectSavedRef.current = cb;
+  }, []);
+
+  const resetFormState = useCallback(() => {
+    setTitle("");
+    setStatus(0);
+    setStartTime("");
+    setAssignees([]);
+    setLocation(null);
+    setSaveError(null);
+    setIsSaving(false);
+  }, []);
 
   const startCreating = useCallback(() => {
     setIsCreating(true);
-    setTitle("");
-    setStatus(0);
-    setStartTime("");
-    setAssignees([]);
-    setLocation(null);
-    setSaveError(null);
-    setSubmitRequested(false);
-    setIsSaving(false);
-  }, []);
+    resetFormState();
+  }, [resetFormState]);
 
   const cancelCreating = useCallback(() => {
     setIsCreating(false);
-    setTitle("");
-    setStatus(0);
-    setStartTime("");
-    setAssignees([]);
-    setLocation(null);
-    setSaveError(null);
-    setSubmitRequested(false);
-    setIsSaving(false);
-  }, []);
+    resetFormState();
+  }, [resetFormState]);
 
   const startEditing = useCallback((project: Project, initialAssignees: string[]) => {
     setIsEditing(true);
@@ -134,48 +139,72 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
       setLocation(null);
     }
     setSaveError(null);
-    setSubmitRequested(false);
     setIsSaving(false);
   }, []);
 
   const cancelEditing = useCallback(() => {
     setIsEditing(false);
     setEditingProjectId(null);
-    setTitle("");
-    setStatus(0);
-    setStartTime("");
-    setAssignees([]);
-    setLocation(null);
-    setSaveError(null);
-    setSubmitRequested(false);
-    setIsSaving(false);
-  }, []);
+    resetFormState();
+  }, [resetFormState]);
 
-  const requestSubmit = useCallback(() => {
-    setSubmitRequested(true);
+  const submitProject = useCallback(async () => {
+    if (!location) return;
     setIsSaving(true);
     setSaveError(null);
-  }, []);
 
-  const onSubmitHandled = useCallback((error?: string) => {
-    if (error) {
-      setSubmitRequested(false);
-      setIsSaving(false);
-      setSaveError(error);
-    } else {
-      setIsCreating(false);
+    const { lng, lat } = location;
+    const orgId = activeOrg?.organization_id ?? null;
+    const startTimeToSave = startTime || null;
+
+    if (isEditing && editingProjectId) {
+      const { data: project, error } = await updateProject(
+        editingProjectId,
+        {
+          title,
+          project_status: status,
+          start_time: startTimeToSave,
+          location: `POINT(${lng} ${lat})`,
+        },
+        assignees,
+        orgId,
+      );
+
+      if (error) {
+        console.error("Failed to update project:", error);
+        setIsSaving(false);
+        setSaveError(error);
+        return;
+      }
+
       setIsEditing(false);
       setEditingProjectId(null);
-      setTitle("");
-      setStatus(0);
-      setStartTime("");
-      setAssignees([]);
-      setLocation(null);
-      setIsSaving(false);
-      setSaveError(null);
-      setSubmitRequested(false);
+      resetFormState();
+      if (project) onProjectSavedRef.current?.(project);
+    } else {
+      const { data: project, error } = await createProject(
+        {
+          title,
+          project_status: status,
+          start_time: startTimeToSave,
+          location: `POINT(${lng} ${lat})`,
+          organization_id: orgId,
+        },
+        assignees,
+      );
+
+      if (error) {
+        console.error("Failed to save project:", error);
+        setIsSaving(false);
+        setSaveError(error);
+        return;
+      }
+
+      setIsCreating(false);
+      resetFormState();
+      if (project) onProjectSavedRef.current?.(project);
     }
-  }, []);
+  }, [location, activeOrg, startTime, isEditing, editingProjectId, title, status, assignees, resetFormState]);
 
   return (
     <NewProjectContext.Provider
@@ -195,13 +224,12 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         setLocation,
         isSaving,
         saveError,
-        submitRequested,
         startCreating,
         cancelCreating,
         startEditing,
         cancelEditing,
-        requestSubmit,
-        onSubmitHandled,
+        submitProject,
+        setOnProjectSaved,
       }}
     >
       {children}

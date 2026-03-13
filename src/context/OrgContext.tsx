@@ -8,7 +8,8 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { supabase, type Organization, type OrganizationMember } from "@/lib/supabase";
+import type { Organization, OrganizationMember } from "@/lib/supabase";
+import { getMembershipsByUserId, getOrganizationsByIds } from "@/lib/organizations";
 import { useAuth } from "@/context/AuthContext";
 
 const STORAGE_KEY = "active_org_id";
@@ -70,13 +71,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
       // Step 1: get the org memberships (including role) for this user
       console.log("Fetching org memberships for user:", session.user.id);
-      const { data: members, error: memberError } = await supabase
-        .from("organization_members")
-        .select("organization_id, user_id, role, created_at, display_name")
-        .eq("user_id", session.user.id);
+      const { data: members, error: memberError } = await getMembershipsByUserId(session.user.id);
 
       if (memberError) {
-        console.error("Failed to fetch memberships:", memberError.message);
+        console.error("Failed to fetch memberships:", memberError);
         setLoading(false);
         return;
       }
@@ -95,13 +93,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       }
 
       // Step 2: fetch the organization rows
-      const { data: orgs, error: orgError } = await supabase
-        .from("organizations")
-        .select("organization_id, name, created_at")
-        .in("organization_id", orgIds);
+      const { data: orgs, error: orgError } = await getOrganizationsByIds(orgIds);
 
       if (orgError) {
-        console.error("Failed to fetch organizations:", orgError.message);
+        console.error("Failed to fetch organizations:", orgError);
         setLoading(false);
         return;
       }

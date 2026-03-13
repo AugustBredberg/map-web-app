@@ -21,7 +21,7 @@ export default function CreateProjectForm({ mode = "create" }: { mode?: "create"
     location,
     isSaving,
     saveError,
-    requestSubmit,
+    submitProject,
   } = useNewProject();
 
   const { closeDrawer } = useDrawer();
@@ -43,7 +43,7 @@ export default function CreateProjectForm({ mode = "create" }: { mode?: "create"
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (canSubmit) requestSubmit();
+          if (canSubmit) submitProject();
         }}
         className="flex flex-col gap-4"
       >

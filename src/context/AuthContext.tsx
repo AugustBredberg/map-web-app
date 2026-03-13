@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import { getSession, onAuthStateChange } from "@/lib/auth";
 
 interface AuthContextValue {
   session: Session | null;
@@ -27,16 +27,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Get the current session on mount
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    getSession().then(({ session }) => {
+      setSession(session);
       setLoading(false);
     });
 
     // Keep session in sync across tabs / token refreshes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = onAuthStateChange((_event, session) => {
+      setSession(session as Session | null);
     });
 
     return () => subscription.unsubscribe();

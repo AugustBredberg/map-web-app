@@ -4,7 +4,7 @@ import { Button, Spinner } from "@heroui/react";
 import { useOrg } from "@/context/OrgContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { signOut } from "@/lib/auth";
 import type { Organization } from "@/lib/supabase";
 
 export default function SettingsPage() {
@@ -18,7 +18,7 @@ export default function SettingsPage() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.push("/login");
   };
 
