@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fetchProjects, createProject, updateProject } from "@/lib/projects";
+import { fetchProjects, createProject, updateProject, deleteProject } from "@/lib/projects";
 import { mockClient, mockClientSequence } from "./mockClient";
 
 const sampleProject = {
@@ -114,5 +114,43 @@ describe("updateProject", () => {
     );
     expect(data).toBeNull();
     expect(error).toBe("not found");
+  });
+});
+
+describe("deleteProject", () => {
+  it("deletes assignees then project on success", async () => {
+    const client = mockClientSequence([
+      { data: null, error: null }, // delete assignees
+      { data: null, error: null }, // delete project
+    ]);
+
+    const { error } = await deleteProject("p1", client);
+
+    expect(error).toBeNull();
+    expect(client.from).toHaveBeenCalledTimes(2);
+    expect(client.from).toHaveBeenCalledWith("project_assignees");
+    expect(client.from).toHaveBeenCalledWith("projects");
+  });
+
+  it("returns error and skips project delete when assignee delete fails", async () => {
+    const client = mockClientSequence([
+      { data: null, error: { message: "assignee delete failed" } },
+    ]);
+
+    const { error } = await deleteProject("p1", client);
+
+    expect(error).toBe("assignee delete failed");
+    expect(client.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns error when project delete fails", async () => {
+    const client = mockClientSequence([
+      { data: null, error: null },                              // assignees deleted OK
+      { data: null, error: { message: "project delete failed" } },
+    ]);
+
+    const { error } = await deleteProject("p1", client);
+
+    expect(error).toBe("project delete failed");
   });
 });

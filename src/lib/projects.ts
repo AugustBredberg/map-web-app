@@ -107,3 +107,25 @@ export async function updateProject(
 
   return { data: project, error: null };
 }
+
+// ---------------------------------------------------------------------------
+// Delete
+// ---------------------------------------------------------------------------
+
+export async function deleteProject(
+  projectId: string,
+  client: DbClient = supabase,
+): Promise<{ error: string | null }> {
+  const { error: assigneesError } = await client
+    .from("project_assignees")
+    .delete()
+    .eq("project_id", projectId);
+
+  if (assigneesError) return { error: assigneesError.message };
+
+  const { error } = await client
+    .from("projects")
+    .delete()
+    .eq("project_id", projectId);
+  return { error: error?.message ?? null };
+}

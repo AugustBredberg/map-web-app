@@ -6,6 +6,7 @@ import { useNewProject, PROJECT_STATUSES, type ProjectStatus } from "@/context/N
 import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
 import { getOrgMembers } from "@/lib/members";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import type { OrganizationMember } from "@/lib/supabase";
 
 export default function CreateProjectForm({ mode = "create" }: { mode?: "create" | "edit" }) {
@@ -22,12 +23,16 @@ export default function CreateProjectForm({ mode = "create" }: { mode?: "create"
     isSaving,
     saveError,
     submitProject,
+    isDeleting,
+    deleteError,
+    deleteProject,
   } = useNewProject();
 
   const { closeDrawer } = useDrawer();
-  const { activeOrg } = useOrg();
+  const { activeOrg, activeRole } = useOrg();
 
   const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (!activeOrg) return;
@@ -169,16 +174,48 @@ export default function CreateProjectForm({ mode = "create" }: { mode?: "create"
           >
             {mode === "edit" ? "Confirm" : "Create Project"}
           </Button>
+          {mode === "edit" && activeRole === "admin" && (
+            <Button
+              color="danger"
+              variant="flat"
+              onPress={() => setShowDeleteConfirm(true)}
+              isDisabled={isSaving || isDeleting}
+              fullWidth
+            >
+              Delete Project
+            </Button>
+          )}
           <Button
             variant="light"
             onPress={closeDrawer}
-            isDisabled={isSaving}
+            isDisabled={isSaving || isDeleting}
             fullWidth
           >
             Cancel
           </Button>
         </div>
       </form>
+
+      {mode === "edit" && activeRole === "admin" && (
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          title="Delete project"
+          message="This will permanently delete the project and all its data. This action cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={() => {
+            setShowDeleteConfirm(false);
+            deleteProject();
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+          isLoading={isDeleting}
+        />
+      )}
+
+      {deleteError && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {deleteError}
+        </p>
+      )}
     </div>
   );
 }

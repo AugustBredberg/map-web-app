@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Project } from "@/lib/supabase";
-import { createProject, updateProject } from "@/lib/projects";
+import { createProject, updateProject, deleteProject as deleteProjectLib } from "@/lib/projects";
 import { useOrg } from "@/context/OrgContext";
 
 function toDatetimeLocal(iso: string): string {
@@ -59,6 +59,12 @@ interface NewProjectContextValue {
   submitProject: () => Promise<void>;
   /** Register a callback that receives the saved project after a successful submit. */
   setOnProjectSaved: (cb: ((project: Project) => void) | null) => void;
+  isDeleting: boolean;
+  deleteError: string | null;
+  /** Delete the currently-editing project. */
+  deleteProject: () => Promise<void>;
+  /** Register a callback that receives the deleted project id after a successful delete. */
+  setOnProjectDeleted: (cb: ((projectId: string) => void) | null) => void;
 }
 
 const NewProjectContext = createContext<NewProjectContextValue>({
@@ -83,6 +89,10 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   cancelEditing: () => {},
   submitProject: async () => {},
   setOnProjectSaved: () => {},
+  isDeleting: false,
+  deleteError: null,
+  deleteProject: async () => {},
+  setOnProjectDeleted: () => {},
 });
 
 export function NewProjectProvider({ children }: { children: ReactNode }) {
@@ -98,11 +108,18 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [location, setLocation] = useState<PickedLocation | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const onProjectSavedRef = useRef<((project: Project) => void) | null>(null);
+  const onProjectDeletedRef = useRef<((projectId: string) => void) | null>(null);
 
   const setOnProjectSaved = useCallback((cb: ((project: Project) => void) | null) => {
     onProjectSavedRef.current = cb;
+  }, []);
+
+  const setOnProjectDeleted = useCallback((cb: ((projectId: string) => void) | null) => {
+    onProjectDeletedRef.current = cb;
   }, []);
 
   const resetFormState = useCallback(() => {
@@ -114,6 +131,27 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setSaveError(null);
     setIsSaving(false);
   }, []);
+
+  const deleteProject = useCallback(async () => {
+    if (!editingProjectId) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    const projectId = editingProjectId;
+    const { error } = await deleteProjectLib(projectId);
+
+    if (error) {
+      setIsDeleting(false);
+      setDeleteError(error);
+      return;
+    }
+
+    setIsEditing(false);
+    setEditingProjectId(null);
+    resetFormState();
+    setIsDeleting(false);
+    onProjectDeletedRef.current?.(projectId);
+  }, [editingProjectId, resetFormState]);
 
   const startCreating = useCallback(() => {
     setIsCreating(true);
@@ -230,6 +268,10 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         cancelEditing,
         submitProject,
         setOnProjectSaved,
+        isDeleting,
+        deleteError,
+        deleteProject,
+        setOnProjectDeleted,
       }}
     >
       {children}

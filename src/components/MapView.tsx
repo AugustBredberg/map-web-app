@@ -61,6 +61,7 @@ export default function MapView() {
     startCreating,
     cancelCreating,
     setOnProjectSaved,
+    setOnProjectDeleted,
   } = useNewProject();
 
   const isPickerActive = isCreating || isEditing;
@@ -84,6 +85,16 @@ export default function MapView() {
     });
     return () => setOnProjectSaved(null);
   }, [setOnProjectSaved, closeDrawer, markers, tempMarkerRef]);
+
+  useEffect(() => {
+    setOnProjectDeleted((projectId: string) => {
+      markers.removeProjectMarker(projectId);
+      tempMarkerRef.current?.remove();
+      tempMarkerRef.current = null;
+      closeDrawer();
+    });
+    return () => setOnProjectDeleted(null);
+  }, [setOnProjectDeleted, closeDrawer, markers, tempMarkerRef]);
 
   const handleAddClick = useCallback(() => {
     startCreating();
