@@ -8,9 +8,9 @@ import { useNewProject } from "@/context/NewProjectContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
 import { getOrgMembers } from "@/lib/members";
-import ConfirmDialog from "@/components/ConfirmDialog";
-import ProjectStatusSelect from "@/components/ProjectStatusSelect";
-import ProjectEstimatedTimeSelect from "@/components/ProjectEstimatedTimeSelect";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import ProjectStatusSelect from "@/components/project/ProjectStatusSelect";
+import ProjectEstimatedTimeSelect from "@/components/project/ProjectEstimatedTimeSelect";
 import type { OrganizationMember } from "@/lib/supabase";
 
 export default function CreateProjectForm({ mode = "create" }: { mode?: "create" | "edit" }) {

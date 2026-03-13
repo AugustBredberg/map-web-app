@@ -7,8 +7,8 @@ import { useOrg } from "@/context/OrgContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
 import { getProjectAssignees } from "@/lib/members";
-import CreateProjectForm from "@/components/CreateProjectForm";
-import ProjectStatusBadge from "@/components/ProjectStatusBadge";
+import CreateProjectForm from "@/components/project/CreateProjectForm";
+import ProjectStatusBadge from "@/components/project/ProjectStatusBadge";
 import type { Project } from "@/lib/supabase";
 import type { ProjectStatus } from "@/context/NewProjectContext";
 

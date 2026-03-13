@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 // Load MapLibre GL map client-side only (requires browser APIs)
-const MapView = dynamic(() => import("@/components/MapView"), {
+const MapView = dynamic(() => import("@/components/map/MapView"), {
   ssr: false,
   loading: () => (
     <div className="flex h-full w-full items-center justify-center bg-gray-800 text-gray-400">

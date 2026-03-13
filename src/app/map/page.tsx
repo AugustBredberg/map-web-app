@@ -1,5 +1,5 @@
 import NavMenu from "@/components/NavMenu";
-import MapClient from "@/components/MapClient";
+import MapClient from "@/components/map/MapClient";
 
 export default function MapPage() {
   return (

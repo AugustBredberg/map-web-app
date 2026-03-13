@@ -5,7 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { OrgProvider } from "@/context/OrgContext";
 import { DrawerProvider } from "@/context/DrawerContext";
 import { NewProjectProvider } from "@/context/NewProjectContext";
-import Drawer from "@/components/Drawer";
+import Drawer from "@/components/ui/Drawer";
 
 export const metadata: Metadata = {
   title: "Map Web App",

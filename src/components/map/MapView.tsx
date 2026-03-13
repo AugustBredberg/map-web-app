@@ -10,8 +10,8 @@ import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
 import { useProjectMarkers } from "@/hooks/useProjectMarkers";
 import { useLocationPicker } from "@/hooks/useLocationPicker";
-import CreateProjectForm from "@/components/CreateProjectForm";
-import ProjectDetailsPanel from "@/components/ProjectDetailsPanel";
+import CreateProjectForm from "@/components/project/CreateProjectForm";
+import ProjectDetailsPanel from "@/components/project/ProjectDetailsPanel";
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
 const MAP_STYLE = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
