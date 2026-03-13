@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@heroui/react";
 import { supabase } from "@/lib/supabase";
 import { PROJECT_STATUSES } from "@/context/NewProjectContext";
+import { useOrg } from "@/context/OrgContext";
+import { useDrawer } from "@/context/DrawerContext";
+import { useNewProject } from "@/context/NewProjectContext";
+import CreateProjectForm from "@/components/CreateProjectForm";
 import type { Project } from "@/lib/supabase";
 
 interface Props {
   project: Project;
+  onEditClose?: () => void;
 }
 
 function statusLabel(value: number | null) {
@@ -22,8 +28,11 @@ function formatDateTime(iso: string | null) {
   });
 }
 
-export default function ProjectDetailsPanel({ project }: Props) {
-  const [assignees, setAssignees] = useState<string[]>([]);
+export default function ProjectDetailsPanel({ project, onEditClose }: Props) {
+  const [assigneeData, setAssigneeData] = useState<{ id: string; name: string }[]>([]);
+  const { activeRole } = useOrg();
+  const { openDrawer } = useDrawer();
+  const { startEditing, cancelEditing } = useNewProject();
 
   useEffect(() => {
     let cancelled = false;
@@ -41,12 +50,29 @@ export default function ProjectDetailsPanel({ project }: Props) {
           .select("user_id, display_name")
           .in("user_id", userIds);
         if (!cancelled && memberRows) {
-          setAssignees(memberRows.map((m) => (m.display_name as string | null) ?? m.user_id));
+          setAssigneeData(
+            memberRows.map((m) => ({
+              id: m.user_id as string,
+              name: (m.display_name as string | null) ?? (m.user_id as string),
+            }))
+          );
         }
       });
 
     return () => { cancelled = true; };
   }, [project.project_id]);
+
+  const handleEditClick = () => {
+    startEditing(project, assigneeData.map((a) => a.id));
+    openDrawer(<CreateProjectForm mode="edit" />, {
+      title: "Edit Project",
+      backdrop: false,
+      onClose: () => {
+        cancelEditing();
+        onEditClose?.();
+      },
+    });
+  };
 
   const fields = [
     { label: "Status", value: statusLabel(project.project_status) },
@@ -65,18 +91,24 @@ export default function ProjectDetailsPanel({ project }: Props) {
 
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Assignees</p>
-        {assignees.length === 0 ? (
+        {assigneeData.length === 0 ? (
           <p className="mt-0.5 text-sm text-gray-400">None</p>
         ) : (
           <ul className="mt-1 flex flex-col gap-1">
-            {assignees.map((name) => (
-              <li key={name} className="text-sm text-gray-800">
+            {assigneeData.map(({ id, name }) => (
+              <li key={id} className="text-sm text-gray-800">
                 {name}
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {activeRole === "admin" && (
+        <Button color="primary" variant="flat" onPress={handleEditClick} fullWidth>
+          Edit Project
+        </Button>
+      )}
     </div>
   );
 }

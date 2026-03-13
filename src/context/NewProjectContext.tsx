@@ -7,6 +7,13 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import type { Project } from "@/lib/supabase";
+
+function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export interface PickedLocation {
   lng: number;
@@ -27,6 +34,8 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number]["value"];
 
 interface NewProjectContextValue {
   isCreating: boolean;
+  isEditing: boolean;
+  editingProjectId: string | null;
   title: string;
   setTitle: (t: string) => void;
   status: ProjectStatus;
@@ -42,6 +51,8 @@ interface NewProjectContextValue {
   submitRequested: boolean;
   startCreating: () => void;
   cancelCreating: () => void;
+  startEditing: (project: Project, initialAssignees: string[]) => void;
+  cancelEditing: () => void;
   requestSubmit: () => void;
   /** Called by MapView after the save attempt completes. Pass an error message on failure. */
   onSubmitHandled: (error?: string) => void;
@@ -49,6 +60,8 @@ interface NewProjectContextValue {
 
 const NewProjectContext = createContext<NewProjectContextValue>({
   isCreating: false,
+  isEditing: false,
+  editingProjectId: null,
   title: "",
   setTitle: () => {},
   status: 0,
@@ -64,12 +77,16 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   submitRequested: false,
   startCreating: () => {},
   cancelCreating: () => {},
+  startEditing: () => {},
+  cancelEditing: () => {},
   requestSubmit: () => {},
   onSubmitHandled: () => {},
 });
 
 export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<ProjectStatus>(0);
   const [startTime, setStartTime] = useState("");
@@ -103,6 +120,37 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setIsSaving(false);
   }, []);
 
+  const startEditing = useCallback((project: Project, initialAssignees: string[]) => {
+    setIsEditing(true);
+    setEditingProjectId(project.project_id);
+    setTitle(project.title);
+    setStatus((project.project_status ?? 0) as ProjectStatus);
+    setStartTime(project.start_time ? toDatetimeLocal(project.start_time) : "");
+    setAssignees(initialAssignees);
+    if (project.location?.coordinates) {
+      const [lng, lat] = project.location.coordinates;
+      setLocation({ lng, lat });
+    } else {
+      setLocation(null);
+    }
+    setSaveError(null);
+    setSubmitRequested(false);
+    setIsSaving(false);
+  }, []);
+
+  const cancelEditing = useCallback(() => {
+    setIsEditing(false);
+    setEditingProjectId(null);
+    setTitle("");
+    setStatus(0);
+    setStartTime("");
+    setAssignees([]);
+    setLocation(null);
+    setSaveError(null);
+    setSubmitRequested(false);
+    setIsSaving(false);
+  }, []);
+
   const requestSubmit = useCallback(() => {
     setSubmitRequested(true);
     setIsSaving(true);
@@ -116,6 +164,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
       setSaveError(error);
     } else {
       setIsCreating(false);
+      setIsEditing(false);
+      setEditingProjectId(null);
       setTitle("");
       setStatus(0);
       setStartTime("");
@@ -131,6 +181,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     <NewProjectContext.Provider
       value={{
         isCreating,
+        isEditing,
+        editingProjectId,
         title,
         setTitle,
         status,
@@ -146,6 +198,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         submitRequested,
         startCreating,
         cancelCreating,
+        startEditing,
+        cancelEditing,
         requestSubmit,
         onSubmitHandled,
       }}

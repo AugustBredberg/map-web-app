@@ -7,7 +7,7 @@ import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
 import { supabase, type OrganizationMember } from "@/lib/supabase";
 
-export default function CreateProjectForm() {
+export default function CreateProjectForm({ mode = "create" }: { mode?: "create" | "edit" }) {
   const {
     title,
     setTitle,
@@ -170,7 +170,7 @@ export default function CreateProjectForm() {
             isLoading={isSaving}
             fullWidth
           >
-            Create Project
+            {mode === "edit" ? "Confirm" : "Create Project"}
           </Button>
           <Button
             variant="light"

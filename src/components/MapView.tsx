@@ -18,6 +18,7 @@ function addMarker(
   map: maplibregl.Map,
   project: Project,
   markersMap: Map<string, HTMLElement>,
+  markerObjectsMap: Map<string, maplibregl.Marker>,
   onClickProject: (project: Project) => void,
 ) {
   if (!project.location?.coordinates) return;
@@ -31,6 +32,7 @@ function addMarker(
   pin.style.transition = "transform 0.15s ease";
   pin.style.transformOrigin = "bottom center";
   markersMap.set(project.project_id, pin);
+  markerObjectsMap.set(project.project_id, marker);
   el.addEventListener("click", (e) => {
     e.stopPropagation();
     onClickProject(project);
@@ -53,6 +55,7 @@ export default function MapView() {
   useEffect(() => { openDrawerRef.current = openDrawer; }, [openDrawer]);
 
   const markersMapRef = useRef(new Map<string, HTMLElement>());
+  const markerObjectsMapRef = useRef(new Map<string, maplibregl.Marker>());
   const selectedProjectIdRef = useRef<string | null>(null);
 
   const applySelectionRef = useRef(() => {
@@ -76,7 +79,10 @@ export default function MapView() {
       });
     }
 
-    openDrawerRef.current(<ProjectDetailsPanel project={project} />, {
+    openDrawerRef.current(<ProjectDetailsPanel project={project} onEditClose={() => {
+      selectedProjectIdRef.current = null;
+      applySelectionRef.current();
+    }} />, {
       title: project.title,
       backdrop: false,
       onClose: () => {
@@ -88,6 +94,8 @@ export default function MapView() {
 
   const {
     isCreating,
+    isEditing,
+    editingProjectId,
     title: newProjectTitle,
     status: newProjectStatus,
     startTime: newProjectStartTime,
@@ -107,6 +115,10 @@ export default function MapView() {
   useEffect(() => { startTimeRef.current = newProjectStartTime; }, [newProjectStartTime]);
   const assigneesRef = useRef(newProjectAssignees);
   useEffect(() => { assigneesRef.current = newProjectAssignees; }, [newProjectAssignees]);
+  const isEditingRef = useRef(isEditing);
+  useEffect(() => { isEditingRef.current = isEditing; }, [isEditing]);
+  const editingProjectIdRef = useRef(editingProjectId);
+  useEffect(() => { editingProjectIdRef.current = editingProjectId; }, [editingProjectId]);
 
   const handleAddClick = useCallback(() => {
     startCreating();
@@ -135,6 +147,7 @@ export default function MapView() {
 
     mapRef.current = map;
     const markersMap = markersMapRef.current;
+    const markerObjects = markerObjectsMapRef.current;
 
     map.on("render", () => applySelectionRef.current());
 
@@ -146,20 +159,21 @@ export default function MapView() {
         console.error("Failed to load projects:", error.message);
         return;
       }
-      (data as Project[]).forEach((p) => addMarker(map, p, markersMap, handleProjectClickRef.current));
+      (data as Project[]).forEach((p) => addMarker(map, p, markersMap, markerObjects, handleProjectClickRef.current));
     });
 
     return () => {
       map.remove();
       mapRef.current = null;
       markersMap.clear();
+      markerObjects.clear();
     };
   }, []);
 
   // Crosshair cursor + click handler while the user is picking a location
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !isCreating) return;
+    if (!map || (!isCreating && !isEditing)) return;
 
     map.getCanvas().style.cursor = "crosshair";
 
@@ -181,17 +195,28 @@ export default function MapView() {
       map.off("click", handleClick);
       map.getCanvas().style.cursor = "";
     };
-  }, [isCreating, setLocation]);
+  }, [isCreating, isEditing, setLocation]);
 
-  // Remove the temp pin whenever the creation flow ends
+  // Place a temp marker at the project's existing location when editing starts
   useEffect(() => {
-    if (!isCreating) {
+    if (!isEditing || !pickedLocation || !mapRef.current) return;
+    if (tempMarkerRef.current) return; // already placed
+    const marker = new maplibregl.Marker({ color: "#f59e0b" });
+    marker.getElement().classList.add("temp-pin");
+    marker.setLngLat([pickedLocation.lng, pickedLocation.lat]).addTo(mapRef.current);
+    tempMarkerRef.current = marker;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing]);
+
+  // Remove the temp pin whenever neither creation nor edit flow is active
+  useEffect(() => {
+    if (!isCreating && !isEditing) {
       tempMarkerRef.current?.remove();
       tempMarkerRef.current = null;
     }
-  }, [isCreating]);
+  }, [isCreating, isEditing]);
 
-  // Watch for the form's "Create Project" submission and run the DB insert
+  // Watch for form submission and run the DB insert (create) or update (edit)
   useEffect(() => {
     if (!submitRequested || !pickedLocation) return;
 
@@ -203,49 +228,106 @@ export default function MapView() {
     const assigneesToSave = assigneesRef.current;
     const orgId = activeOrgRef.current?.organization_id ?? null;
 
-    supabase
-      .from("projects")
-      .insert({
-        title: titleToSave,
-        project_status: statusToSave,
-        start_time: startTimeToSave,
-        location: `POINT(${lng} ${lat})`,
-        organization_id: orgId,
-      })
-      .select("project_id, created_at, created_by, organization_id, title, location, project_status, start_time")
-      .single()
-      .then(async ({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          console.error("Failed to save project:", error.message);
-          onSubmitHandled(error.message);
-          return;
-        }
-
-        const project = data as Project;
-
-        // Insert assignees into project_assignees if any were selected
-        if (assigneesToSave.length > 0) {
-          const { error: assigneeError } = await supabase
-            .from("project_assignees")
-            .insert(
-              assigneesToSave.map((userId) => ({
-                project_id: project.project_id,
-                user_id: userId,
-                organization_id: orgId,
-              }))
-            );
-          if (assigneeError) {
-            console.error("Failed to save assignees:", assigneeError.message);
+    if (isEditingRef.current && editingProjectIdRef.current) {
+      // Edit flow — UPDATE existing project
+      const projectId = editingProjectIdRef.current;
+      supabase
+        .from("projects")
+        .update({
+          title: titleToSave,
+          project_status: statusToSave,
+          start_time: startTimeToSave,
+          location: `POINT(${lng} ${lat})`,
+        })
+        .eq("project_id", projectId)
+        .select("project_id, created_at, created_by, organization_id, title, location, project_status, start_time")
+        .single()
+        .then(async ({ data, error }) => {
+          if (cancelled) return;
+          if (error) {
+            console.error("Failed to update project:", error.message);
+            onSubmitHandled(error.message);
+            return;
           }
-        }
 
-        tempMarkerRef.current?.remove();
-        tempMarkerRef.current = null;
-        if (mapRef.current) addMarker(mapRef.current, project, markersMapRef.current, handleProjectClickRef.current);
-        onSubmitHandled();
-        closeDrawer();
-      });
+          const project = data as Project;
+
+          // Replace assignees: delete existing then re-insert
+          await supabase.from("project_assignees").delete().eq("project_id", projectId);
+          if (assigneesToSave.length > 0) {
+            const { error: assigneeError } = await supabase
+              .from("project_assignees")
+              .insert(
+                assigneesToSave.map((userId) => ({
+                  project_id: projectId,
+                  user_id: userId,
+                  organization_id: orgId,
+                }))
+              );
+            if (assigneeError) {
+              console.error("Failed to update assignees:", assigneeError.message);
+            }
+          }
+
+          // Replace the map marker with updated data
+          const oldMarker = markerObjectsMapRef.current.get(projectId);
+          if (oldMarker) {
+            oldMarker.remove();
+            markerObjectsMapRef.current.delete(projectId);
+            markersMapRef.current.delete(projectId);
+          }
+          tempMarkerRef.current?.remove();
+          tempMarkerRef.current = null;
+          if (mapRef.current) addMarker(mapRef.current, project, markersMapRef.current, markerObjectsMapRef.current, handleProjectClickRef.current);
+          onSubmitHandled();
+          closeDrawer();
+        });
+    } else {
+      // Create flow — INSERT new project
+      supabase
+        .from("projects")
+        .insert({
+          title: titleToSave,
+          project_status: statusToSave,
+          start_time: startTimeToSave,
+          location: `POINT(${lng} ${lat})`,
+          organization_id: orgId,
+        })
+        .select("project_id, created_at, created_by, organization_id, title, location, project_status, start_time")
+        .single()
+        .then(async ({ data, error }) => {
+          if (cancelled) return;
+          if (error) {
+            console.error("Failed to save project:", error.message);
+            onSubmitHandled(error.message);
+            return;
+          }
+
+          const project = data as Project;
+
+          // Insert assignees into project_assignees if any were selected
+          if (assigneesToSave.length > 0) {
+            const { error: assigneeError } = await supabase
+              .from("project_assignees")
+              .insert(
+                assigneesToSave.map((userId) => ({
+                  project_id: project.project_id,
+                  user_id: userId,
+                  organization_id: orgId,
+                }))
+              );
+            if (assigneeError) {
+              console.error("Failed to save assignees:", assigneeError.message);
+            }
+          }
+
+          tempMarkerRef.current?.remove();
+          tempMarkerRef.current = null;
+          if (mapRef.current) addMarker(mapRef.current, project, markersMapRef.current, markerObjectsMapRef.current, handleProjectClickRef.current);
+          onSubmitHandled();
+          closeDrawer();
+        });
+    }
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -253,7 +335,7 @@ export default function MapView() {
 
 
   return (
-    <div className={`relative h-full w-full${isCreating ? " map-creating" : ""}`}>
+    <div className={`relative h-full w-full${(isCreating || isEditing) ? " map-creating" : ""}`}>
       <div ref={containerRef} className="h-full w-full" />
 
       {/* Floating + button — hidden while the drawer is open or creation is in progress */}
@@ -285,7 +367,7 @@ export default function MapView() {
       )}
 
       {/* Map hint — nudge the user to click the map when no location is set yet */}
-      {isCreating && !pickedLocation && (
+      {(isCreating || isEditing) && !pickedLocation && (
         <div className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 rounded-xl bg-gray-900/80 px-4 py-2.5 shadow-lg backdrop-blur-sm">
           <span className="text-sm text-white">Tap the map to set a location</span>
         </div>
