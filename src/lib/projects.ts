@@ -4,7 +4,7 @@ import type { Project } from "@/lib/supabase";
 type DbClient = typeof supabase;
 
 const PROJECT_FIELDS =
-  "project_id, created_at, created_by, organization_id, title, description, estimated_time, location, project_status, start_time";
+  "project_id, created_at, updated_at, created_by, organization_id, title, description, estimated_time, location, project_status, start_time";
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -38,7 +38,7 @@ export async function createProject(
 ): Promise<{ data: Project | null; error: string | null }> {
   const { data, error } = await client
     .from("projects")
-    .insert(input)
+    .insert({ ...input, updated_at: new Date().toISOString() })
     .select(PROJECT_FIELDS)
     .single();
 
@@ -84,7 +84,7 @@ export async function updateProject(
 ): Promise<{ data: Project | null; error: string | null }> {
   const { data, error } = await client
     .from("projects")
-    .update(input)
+    .update({ ...input, updated_at: new Date().toISOString() })
     .eq("project_id", projectId)
     .select(PROJECT_FIELDS)
     .single();

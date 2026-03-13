@@ -1,17 +1,25 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Button } from "@heroui/react";
 import { useDrawer } from "@/context/DrawerContext";
 
 export default function Drawer() {
   const { isOpen, content, contentKey, backdrop, title, closeDrawer } = useDrawer();
+  const pathname = usePathname();
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
+
+  // Close when navigating away
+  useEffect(() => {
+    closeDrawer();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // Close on Escape key
   useEffect(() => {

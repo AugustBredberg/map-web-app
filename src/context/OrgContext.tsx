@@ -25,6 +25,8 @@ interface OrgContextValue {
   displayName: string | null;
   /** Manually select an organization */
   setActiveOrg: (org: Organization) => void;
+  /** Re-fetch the user's organizations (e.g. after accepting an invite) */
+  refreshOrgs: () => void;
   /** True while organizations are being fetched */
   loading: boolean;
 }
@@ -35,6 +37,7 @@ const OrgContext = createContext<OrgContextValue>({
   activeRole: null,
   displayName: null,
   setActiveOrg: () => {},
+  refreshOrgs: () => {},
   loading: true,
 });
 
@@ -46,6 +49,9 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [memberships, setMemberships] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refreshOrgs = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   const setActiveOrg = useCallback((org: Organization) => {
     setActiveOrgState(org);
@@ -131,7 +137,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     };
 
     fetchOrgs();
-  }, [session, authLoading]);
+  }, [session, authLoading, refreshKey]);
 
   // Keep activeRole in sync when setActiveOrg is called manually (e.g. from settings)
   const setActiveOrgWithRole = useCallback((org: Organization) => {
@@ -142,7 +148,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   }, [setActiveOrg, memberships]);
 
   return (
-    <OrgContext.Provider value={{ organizations, activeOrg, activeRole, displayName, setActiveOrg: setActiveOrgWithRole, loading }}>
+    <OrgContext.Provider value={{ organizations, activeOrg, activeRole, displayName, setActiveOrg: setActiveOrgWithRole, refreshOrgs, loading }}>
       {children}
     </OrgContext.Provider>
   );

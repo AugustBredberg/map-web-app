@@ -1,20 +1,30 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@heroui/react";
 import { signInWithPassword, signUp } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 
 type AuthMode = "signin" | "signup";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { session, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && session) {
+      router.replace("/map");
+    }
+  }, [session, authLoading, router]);
+
+  if (authLoading || session) return null;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -44,13 +54,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="dark flex min-h-screen items-center justify-center bg-gray-950 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-gray-900 p-8 shadow-2xl ring-1 ring-white/10">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg ring-1 ring-gray-200">
         {/* Header */}
-        <h1 className="mb-1 text-2xl font-bold text-white">
+        <h1 className="mb-1 text-2xl font-bold text-gray-900">
           {mode === "signin" ? "Sign in" : "Create account"}
         </h1>
-        <p className="mb-6 text-sm text-gray-400">
+        <p className="mb-6 text-sm text-gray-500">
           {mode === "signin"
             ? "Welcome back to Map Web App."
             : "Get started with Map Web App."}
@@ -83,12 +93,12 @@ export default function LoginPage() {
           />
 
           {error && (
-            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400 ring-1 ring-red-500/20">
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 ring-1 ring-red-200">
               {error}
             </p>
           )}
           {message && (
-            <p className="rounded-lg bg-green-500/10 px-3 py-2 text-xs text-green-400 ring-1 ring-green-500/20">
+            <p className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-700 ring-1 ring-green-200">
               {message}
             </p>
           )}
@@ -105,7 +115,7 @@ export default function LoginPage() {
         </form>
 
         {/* Toggle mode */}
-        <p className="mt-5 text-center text-sm text-gray-400">
+        <p className="mt-5 text-center text-sm text-gray-500">
           {mode === "signin" ? (
             <>
               Don&apos;t have an account?{" "}

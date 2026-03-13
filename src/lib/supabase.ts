@@ -4,6 +4,7 @@ export type Project = {
   project_id: string;
   organization_id: string | null;
   created_at: string;
+  updated_at: string;
   created_by: string | null;
   start_time: string | null;
   expected_hours: number | null;
