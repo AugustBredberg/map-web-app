@@ -4,7 +4,8 @@ import { useEffect, useRef, useCallback } from "react";
 import { Button } from "@heroui/react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { supabase, type Project } from "@/lib/supabase";
+import { type Project } from "@/lib/supabase";
+import { fetchProjects, createProject, updateProject } from "@/lib/projects";
 import { useOrg } from "@/context/OrgContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
@@ -152,11 +153,9 @@ export default function MapView() {
     map.on("render", () => applySelectionRef.current());
 
     map.once("load", async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("project_id, created_at, created_by, organization_id, title, location, project_status, start_time");
+      const { data, error } = await fetchProjects();
       if (error) {
-        console.error("Failed to load projects:", error.message);
+        console.error("Failed to load projects:", error);
         return;
       }
       (data as Project[]).forEach((p) => addMarker(map, p, markersMap, markerObjects, handleProjectClickRef.current));
@@ -228,107 +227,70 @@ export default function MapView() {
     const assigneesToSave = assigneesRef.current;
     const orgId = activeOrgRef.current?.organization_id ?? null;
 
-    if (isEditingRef.current && editingProjectIdRef.current) {
-      // Edit flow — UPDATE existing project
-      const projectId = editingProjectIdRef.current;
-      supabase
-        .from("projects")
-        .update({
-          title: titleToSave,
-          project_status: statusToSave,
-          start_time: startTimeToSave,
-          location: `POINT(${lng} ${lat})`,
-        })
-        .eq("project_id", projectId)
-        .select("project_id, created_at, created_by, organization_id, title, location, project_status, start_time")
-        .single()
-        .then(async ({ data, error }) => {
-          if (cancelled) return;
-          if (error) {
-            console.error("Failed to update project:", error.message);
-            onSubmitHandled(error.message);
-            return;
-          }
+    const run = async () => {
+      if (isEditingRef.current && editingProjectIdRef.current) {
+        // Edit flow — UPDATE existing project
+        const projectId = editingProjectIdRef.current;
+        const { data: project, error } = await updateProject(
+          projectId,
+          {
+            title: titleToSave,
+            project_status: statusToSave,
+            start_time: startTimeToSave,
+            location: `POINT(${lng} ${lat})`,
+          },
+          assigneesToSave,
+          orgId,
+        );
 
-          const project = data as Project;
+        if (cancelled) return;
+        if (error) {
+          console.error("Failed to update project:", error);
+          onSubmitHandled(error);
+          return;
+        }
 
-          // Replace assignees: delete existing then re-insert
-          await supabase.from("project_assignees").delete().eq("project_id", projectId);
-          if (assigneesToSave.length > 0) {
-            const { error: assigneeError } = await supabase
-              .from("project_assignees")
-              .insert(
-                assigneesToSave.map((userId) => ({
-                  project_id: projectId,
-                  user_id: userId,
-                  organization_id: orgId,
-                }))
-              );
-            if (assigneeError) {
-              console.error("Failed to update assignees:", assigneeError.message);
-            }
-          }
+        // Replace the map marker with updated data
+        const oldMarker = markerObjectsMapRef.current.get(projectId);
+        if (oldMarker) {
+          oldMarker.remove();
+          markerObjectsMapRef.current.delete(projectId);
+          markersMapRef.current.delete(projectId);
+        }
+        tempMarkerRef.current?.remove();
+        tempMarkerRef.current = null;
+        if (mapRef.current) addMarker(mapRef.current, project!, markersMapRef.current, markerObjectsMapRef.current, handleProjectClickRef.current);
+        onSubmitHandled();
+        closeDrawer();
+      } else {
+        // Create flow — INSERT new project
+        const { data: project, error } = await createProject(
+          {
+            title: titleToSave,
+            project_status: statusToSave,
+            start_time: startTimeToSave,
+            location: `POINT(${lng} ${lat})`,
+            organization_id: orgId,
+          },
+          assigneesToSave,
+        );
 
-          // Replace the map marker with updated data
-          const oldMarker = markerObjectsMapRef.current.get(projectId);
-          if (oldMarker) {
-            oldMarker.remove();
-            markerObjectsMapRef.current.delete(projectId);
-            markersMapRef.current.delete(projectId);
-          }
-          tempMarkerRef.current?.remove();
-          tempMarkerRef.current = null;
-          if (mapRef.current) addMarker(mapRef.current, project, markersMapRef.current, markerObjectsMapRef.current, handleProjectClickRef.current);
-          onSubmitHandled();
-          closeDrawer();
-        });
-    } else {
-      // Create flow — INSERT new project
-      supabase
-        .from("projects")
-        .insert({
-          title: titleToSave,
-          project_status: statusToSave,
-          start_time: startTimeToSave,
-          location: `POINT(${lng} ${lat})`,
-          organization_id: orgId,
-        })
-        .select("project_id, created_at, created_by, organization_id, title, location, project_status, start_time")
-        .single()
-        .then(async ({ data, error }) => {
-          if (cancelled) return;
-          if (error) {
-            console.error("Failed to save project:", error.message);
-            onSubmitHandled(error.message);
-            return;
-          }
+        if (cancelled) return;
+        if (error) {
+          console.error("Failed to save project:", error);
+          onSubmitHandled(error);
+          return;
+        }
 
-          const project = data as Project;
+        tempMarkerRef.current?.remove();
+        tempMarkerRef.current = null;
+        if (mapRef.current) addMarker(mapRef.current, project!, markersMapRef.current, markerObjectsMapRef.current, handleProjectClickRef.current);
+        onSubmitHandled();
+        closeDrawer();
+      }
+    };
 
-          // Insert assignees into project_assignees if any were selected
-          if (assigneesToSave.length > 0) {
-            const { error: assigneeError } = await supabase
-              .from("project_assignees")
-              .insert(
-                assigneesToSave.map((userId) => ({
-                  project_id: project.project_id,
-                  user_id: userId,
-                  organization_id: orgId,
-                }))
-              );
-            if (assigneeError) {
-              console.error("Failed to save assignees:", assigneeError.message);
-            }
-          }
-
-          tempMarkerRef.current?.remove();
-          tempMarkerRef.current = null;
-          if (mapRef.current) addMarker(mapRef.current, project, markersMapRef.current, markerObjectsMapRef.current, handleProjectClickRef.current);
-          onSubmitHandled();
-          closeDrawer();
-        });
-    }
-
+    run();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitRequested]);

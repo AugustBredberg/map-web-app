@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@heroui/react";
-import { supabase } from "@/lib/supabase";
+
 import { PROJECT_STATUSES } from "@/context/NewProjectContext";
 import { useOrg } from "@/context/OrgContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
+import { getProjectAssignees } from "@/lib/members";
 import CreateProjectForm from "@/components/CreateProjectForm";
 import type { Project } from "@/lib/supabase";
 
@@ -37,27 +38,9 @@ export default function ProjectDetailsPanel({ project, onEditClose }: Props) {
   useEffect(() => {
     let cancelled = false;
 
-    supabase
-      .from("project_assignees")
-      .select("user_id")
-      .eq("project_id", project.project_id)
-      .then(async ({ data: assigneeRows }) => {
-        if (cancelled) return;
-        if (!assigneeRows || assigneeRows.length === 0) return;
-        const userIds = assigneeRows.map((r) => r.user_id as string);
-        const { data: memberRows } = await supabase
-          .from("organization_members")
-          .select("user_id, display_name")
-          .in("user_id", userIds);
-        if (!cancelled && memberRows) {
-          setAssigneeData(
-            memberRows.map((m) => ({
-              id: m.user_id as string,
-              name: (m.display_name as string | null) ?? (m.user_id as string),
-            }))
-          );
-        }
-      });
+    getProjectAssignees(project.project_id).then(({ data }) => {
+      if (!cancelled && data) setAssigneeData(data);
+    });
 
     return () => { cancelled = true; };
   }, [project.project_id]);

@@ -5,7 +5,8 @@ import { Button, Input, Select, SelectItem } from "@heroui/react";
 import { useNewProject, PROJECT_STATUSES, type ProjectStatus } from "@/context/NewProjectContext";
 import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
-import { supabase, type OrganizationMember } from "@/lib/supabase";
+import { getOrgMembers } from "@/lib/members";
+import type { OrganizationMember } from "@/lib/supabase";
 
 export default function CreateProjectForm({ mode = "create" }: { mode?: "create" | "edit" }) {
   const {
@@ -30,13 +31,9 @@ export default function CreateProjectForm({ mode = "create" }: { mode?: "create"
 
   useEffect(() => {
     if (!activeOrg) return;
-    supabase
-      .from("organization_members")
-      .select("user_id, display_name, role")
-      .eq("organization_id", activeOrg.organization_id)
-      .then(({ data }) => {
-        if (data) setMembers(data as OrganizationMember[]);
-      });
+    getOrgMembers(activeOrg.organization_id).then(({ data }) => {
+      if (data) setMembers(data);
+    });
   }, [activeOrg]);
 
   const canSubmit = title.trim().length > 0 && location !== null && !isSaving;
