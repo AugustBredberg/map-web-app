@@ -2,7 +2,7 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input } from "@heroui/react";
+import { Button, Input, Spinner } from "@heroui/react";
 import { signInWithPassword, signUp } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
 
@@ -24,7 +24,15 @@ export default function LoginPage() {
     }
   }, [session, authLoading, router]);
 
-  if (authLoading || session) return null;
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+        <Spinner color="primary" />
+      </div>
+    );
+  }
+
+  if (session) return null;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

@@ -35,6 +35,11 @@ export async function getSession(client: AuthClient = supabase) {
   return { session: data.session, error: error?.message ?? null };
 }
 
+export async function refreshSession(client: AuthClient = supabase) {
+  const { data, error } = await client.auth.refreshSession();
+  return { session: data.session, error: error?.message ?? null };
+}
+
 export function onAuthStateChange(
   callback: (event: string, session: unknown) => void,
   client: AuthClient = supabase,

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { getSession, onAuthStateChange } from "@/lib/auth";
+import { getSession, onAuthStateChange, refreshSession } from "@/lib/auth";
 import { getSystemRole } from "@/lib/profiles";
 import type { SystemRole } from "@/lib/supabase";
 
@@ -93,9 +93,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Proactive session refresh when the tab regains visibility.
+    // Browsers throttle timers in background tabs, so the Supabase
+    // auto-refresh may not fire on time.  This ensures a fresh access
+    // token is available as soon as the user returns.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshSession().catch(() => {
+          // If refresh fails, onAuthStateChange will fire SIGNED_OUT.
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       cancelled = true;
       subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
