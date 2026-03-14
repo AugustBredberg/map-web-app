@@ -117,7 +117,7 @@ export default function ProjectDetailsPanel({ project, onEditClose }: Props) {
         ) : (
           <div className="flex flex-wrap gap-2">
             {assigneeData.map(({ id, name }) => (
-              <Chip key={id} variant="flat" size="md" color="success">{name}</Chip>
+              <Chip key={id} size="md" color="primary" variant="faded">{name}</Chip>
             ))}
           </div>
         )}

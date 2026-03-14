@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { getSession, onAuthStateChange, refreshSession } from "@/lib/auth";
+import { getSession, onAuthStateChange } from "@/lib/auth";
 import { getSystemRole } from "@/lib/profiles";
 import type { SystemRole } from "@/lib/supabase";
 
@@ -34,6 +34,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    // Fetch the system role outside the auth callback to avoid deadlocking
+    // Supabase's internal session lock (the callback runs inside that lock,
+    // and any Supabase query also needs the lock → circular wait).
+    const fetchSystemRole = (userId: string) => {
+      getSystemRole(userId).then(({ data }) => {
+        if (!cancelled) setSystemRole(data);
+      });
+    };
+
     // Get the current session on mount. Always call setLoading(false) via finally
     // so a thrown error or hanging network call can never leave the app stuck.
     const boot = async () => {
@@ -55,14 +64,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void boot();
 
     // Keep session in sync across tabs / token refreshes.
+    //
+    // IMPORTANT: This callback is invoked by Supabase's _notifyAllSubscribers
+    // which runs **inside** an internal navigator lock.  Any Supabase query
+    // (including getSession()) also needs that lock, so awaiting a query here
+    // would deadlock.  Always schedule Supabase calls outside the callback
+    // (fire-and-forget via fetchSystemRole).
     const {
       data: { subscription },
-    } = onAuthStateChange(async (event, incomingSession) => {
+    } = onAuthStateChange((event, incomingSession) => {
       if (cancelled) return;
       const s = incomingSession as Session | null;
 
       if (event === "SIGNED_OUT") {
-        // Session ended (sign-out or refresh token expired) — clear everything.
         setSession(null);
         setSystemRole(null);
         setLoading(false);
@@ -70,15 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === "TOKEN_REFRESHED") {
-        // Update React state with the fresh session object so components always
-        // hold a valid access token. OrgContext watches userId (not session),
-        // so this will NOT trigger a needless org re-fetch.
         setSession(s);
         return;
       }
 
-      // For SIGNED_IN / USER_UPDATED / INITIAL_SESSION — only update when the
-      // user identity actually changes to avoid duplicate OrgContext fetches.
+      // SIGNED_IN / USER_UPDATED / INITIAL_SESSION
+      // Only update state when the user identity actually changes.
       setSession((prev) => {
         const prevId = prev?.user?.id ?? null;
         const nextId = s?.user?.id ?? null;
@@ -86,30 +97,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return s;
       });
       if (s) {
-        const { data } = await getSystemRole(s.user.id);
-        if (!cancelled) setSystemRole(data);
+        fetchSystemRole(s.user.id);
       } else {
         setSystemRole(null);
       }
     });
 
-    // Proactive session refresh when the tab regains visibility.
-    // Browsers throttle timers in background tabs, so the Supabase
-    // auto-refresh may not fire on time.  This ensures a fresh access
-    // token is available as soon as the user returns.
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        refreshSession().catch(() => {
-          // If refresh fails, onAuthStateChange will fire SIGNED_OUT.
-        });
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    // No custom visibilitychange handler needed — the Supabase client already
+    // recovers the session when the tab regains focus (via its built-in
+    // _onVisibilityChanged → _recoverAndRefresh flow).
 
     return () => {
       cancelled = true;
       subscription.unsubscribe();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
