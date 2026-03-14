@@ -58,6 +58,11 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, org.organization_id);
   }, []);
 
+  // Use the user ID as the dependency instead of the full session object.
+  // This prevents re-fetching orgs on every TOKEN_REFRESHED event (which
+  // produces a new session object for the same user).
+  const userId = session?.user?.id ?? null;
+
   useEffect(() => {
     // Wait for auth to resolve first
     if (authLoading) return;
@@ -165,7 +170,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     };
 
     fetchOrgs();
-  }, [session, authLoading, refreshKey]);
+  }, [userId, authLoading, refreshKey]);
 
   // Keep activeRole in sync when setActiveOrg is called manually (e.g. from settings)
   const setActiveOrgWithRole = useCallback((org: Organization) => {

@@ -15,6 +15,16 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
     }
   }, [session, loading, router]);
 
+  // Safety net: if loading is still true after 8 seconds something went wrong
+  // (e.g. network hung mid-init). Redirect to login so the user isn't stuck.
+  useEffect(() => {
+    if (!loading) return;
+    const timeout = setTimeout(() => {
+      router.replace("/login");
+    }, 8000);
+    return () => clearTimeout(timeout);
+  }, [loading, router]);
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-950">

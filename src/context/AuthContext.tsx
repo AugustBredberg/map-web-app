@@ -32,39 +32,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get the current session on mount
-    getSession().then(async ({ session }) => {
-      setSession(session);
-      if (session) {
-        const { data } = await getSystemRole(session.user.id);
-        setSystemRole(data);
+    let cancelled = false;
+
+    // Get the current session on mount. Always call setLoading(false) via finally
+    // so a thrown error or hanging network call can never leave the app stuck.
+    const boot = async () => {
+      try {
+        const { session: initialSession } = await getSession();
+        if (cancelled) return;
+        setSession(initialSession);
+        if (initialSession) {
+          const { data } = await getSystemRole(initialSession.user.id);
+          if (!cancelled) setSystemRole(data);
+        }
+      } catch (err) {
+        console.error("[AuthContext] Failed to load initial session:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    void boot();
 
     // Keep session in sync across tabs / token refreshes.
-    // Only update state when the user actually changes (sign-in / sign-out) —
-    // ignore token refresh events where the user id is identical, otherwise
-    // OrgContext re-runs its fetch on every tab focus.
     const {
       data: { subscription },
-    } = onAuthStateChange(async (_event, incomingSession) => {
+    } = onAuthStateChange(async (event, incomingSession) => {
+      if (cancelled) return;
       const s = incomingSession as Session | null;
+
+      if (event === "SIGNED_OUT") {
+        // Session ended (sign-out or refresh token expired) — clear everything.
+        setSession(null);
+        setSystemRole(null);
+        setLoading(false);
+        return;
+      }
+
+      if (event === "TOKEN_REFRESHED") {
+        // Update React state with the fresh session object so components always
+        // hold a valid access token. OrgContext watches userId (not session),
+        // so this will NOT trigger a needless org re-fetch.
+        setSession(s);
+        return;
+      }
+
+      // For SIGNED_IN / USER_UPDATED / INITIAL_SESSION — only update when the
+      // user identity actually changes to avoid duplicate OrgContext fetches.
       setSession((prev) => {
         const prevId = prev?.user?.id ?? null;
         const nextId = s?.user?.id ?? null;
-        if (prevId === nextId) return prev; // same user — no state change needed
+        if (prevId === nextId) return prev;
         return s;
       });
       if (s) {
         const { data } = await getSystemRole(s.user.id);
-        setSystemRole(data);
+        if (!cancelled) setSystemRole(data);
       } else {
         setSystemRole(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

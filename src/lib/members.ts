@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { OrganizationMember } from "@/lib/supabase";
+import type { OrganizationMember, Role } from "@/lib/supabase";
 
 type DbClient = typeof supabase;
 
@@ -17,6 +17,20 @@ export async function getOrgMembers(
     .eq("organization_id", organizationId);
 
   return { data: data as OrganizationMember[] | null, error: error?.message ?? null };
+}
+
+export async function updateMemberRole(
+  organizationId: string,
+  userId: string,
+  role: Role,
+  client: DbClient = supabase,
+): Promise<{ error: string | null }> {
+  const { error } = await client
+    .from("organization_members")
+    .update({ role })
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId);
+  return { error: error?.message ?? null };
 }
 
 // ---------------------------------------------------------------------------
