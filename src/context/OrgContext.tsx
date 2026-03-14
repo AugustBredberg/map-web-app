@@ -8,8 +8,8 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { Organization, OrganizationMember } from "@/lib/supabase";
-import { getMembershipsByUserId, getOrganizationsByIds } from "@/lib/organizations";
+import type { Organization, OrganizationMember, Role } from "@/lib/supabase";
+import { getMembershipsByUserId, getOrganizationsByIds, getAllOrganizations } from "@/lib/organizations";
 import { useAuth } from "@/context/AuthContext";
 
 const STORAGE_KEY = "active_org_id";
@@ -20,7 +20,7 @@ interface OrgContextValue {
   /** The currently selected organization */
   activeOrg: Organization | null;
   /** The current user's role in the active organization */
-  activeRole: string | null;
+  activeRole: Role | null;
   /** The current user's display name in the active organization */
   displayName: string | null;
   /** Manually select an organization */
@@ -42,10 +42,10 @@ const OrgContext = createContext<OrgContextValue>({
 });
 
 export function OrgProvider({ children }: { children: ReactNode }) {
-  const { session, loading: authLoading } = useAuth();
+  const { session, systemRole, loading: authLoading } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [activeOrg, setActiveOrgState] = useState<Organization | null>(null);
-  const [activeRole, setActiveRole] = useState<string | null>(null);
+  const [activeRole, setActiveRole] = useState<Role | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [memberships, setMemberships] = useState<OrganizationMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +74,34 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       }
 
       setLoading(true);
+
+      if (systemRole === "dev") {
+        // Dev users see all orgs and always have admin role — no membership row needed
+        const { data: orgs, error: orgError } = await getAllOrganizations();
+        if (orgError) {
+          console.error("Failed to fetch organizations:", orgError);
+          setLoading(false);
+          return;
+        }
+        const resolvedOrgs = (orgs ?? []) as Organization[];
+        setOrganizations(resolvedOrgs);
+        setMemberships([]);
+
+        const savedId = localStorage.getItem(STORAGE_KEY);
+        const savedOrg = resolvedOrgs.find((o) => o.organization_id === savedId) ?? null;
+        if (savedOrg) {
+          setActiveOrgState(savedOrg);
+        } else if (resolvedOrgs.length === 1) {
+          setActiveOrgState(resolvedOrgs[0]);
+          localStorage.setItem(STORAGE_KEY, resolvedOrgs[0].organization_id);
+        } else {
+          setActiveOrgState(null);
+        }
+        setActiveRole("admin");
+        setDisplayName(null);
+        setLoading(false);
+        return;
+      }
 
       // Step 1: get the org memberships (including role) for this user
       console.log("Fetching org memberships for user:", session.user.id);
@@ -142,10 +170,15 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   // Keep activeRole in sync when setActiveOrg is called manually (e.g. from settings)
   const setActiveOrgWithRole = useCallback((org: Organization) => {
     setActiveOrg(org);
+    if (systemRole === "dev") {
+      setActiveRole("admin");
+      setDisplayName(null);
+      return;
+    }
     const m = memberships.find((m) => m.organization_id === org.organization_id);
     setActiveRole(m?.role ?? null);
     setDisplayName(m?.display_name ?? null);
-  }, [setActiveOrg, memberships]);
+  }, [setActiveOrg, memberships, systemRole]);
 
   return (
     <OrgContext.Provider value={{ organizations, activeOrg, activeRole, displayName, setActiveOrg: setActiveOrgWithRole, refreshOrgs, loading }}>

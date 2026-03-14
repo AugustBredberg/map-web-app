@@ -1,7 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { Organization, OrganizationMember } from "@/lib/supabase";
-
-type DbClient = typeof supabase;
+import type { Organization, OrganizationMember, DbClient } from "@/lib/supabase";
 
 export async function getMembershipsByUserId(
   userId: string,
@@ -25,4 +23,29 @@ export async function getOrganizationsByIds(
     .in("organization_id", orgIds);
 
   return { data: data as Organization[] | null, error: error?.message ?? null };
+}
+
+export async function getAllOrganizations(
+  client: DbClient = supabase,
+): Promise<{ data: Organization[] | null; error: string | null }> {
+  const { data, error } = await client
+    .from("organizations")
+    .select("organization_id, name, created_at")
+    .order("name");
+
+  return { data: data as Organization[] | null, error: error?.message ?? null };
+}
+
+export async function createOrganization(
+  name: string,
+  client: DbClient = supabase,
+): Promise<{ data: Organization | null; error: string | null }> {
+  const { data, error } = await client
+    .from("organizations")
+    .insert({ name })
+    .select("organization_id, name, created_at")
+    .single();
+
+  if (error) return { data: null, error: error.message };
+  return { data: data as Organization, error: null };
 }

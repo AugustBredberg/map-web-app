@@ -10,6 +10,7 @@ import { getProjectAssignees } from "@/lib/members";
 import CreateProjectForm from "@/components/project/CreateProjectForm";
 import ProjectStatusBadge from "@/components/project/ProjectStatusBadge";
 import type { Project } from "@/lib/supabase";
+import { hasMinRole } from "@/lib/supabase";
 import type { ProjectStatus } from "@/context/NewProjectContext";
 
 interface Props {
@@ -87,7 +88,7 @@ export default function ProjectDetailsPanel({ project, onEditClose }: Props) {
         )}
       </div>
 
-      {activeRole === "admin" && (
+      {hasMinRole(activeRole, "admin") && (
         <Button color="primary" variant="flat" onPress={handleEditClick} fullWidth>
           Edit Project
         </Button>

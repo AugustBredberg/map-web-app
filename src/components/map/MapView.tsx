@@ -4,9 +4,10 @@ import { useEffect, useRef, useCallback } from "react";
 import { Button } from "@heroui/react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { type Project } from "@/lib/supabase";
+import { type Project, hasMinRole } from "@/lib/supabase";
 import { fetchProjects } from "@/lib/projects";
 import { useDrawer } from "@/context/DrawerContext";
+import { useOrg } from "@/context/OrgContext";
 import { useNewProject } from "@/context/NewProjectContext";
 import { useProjectMarkers } from "@/hooks/useProjectMarkers";
 import { useLocationPicker } from "@/hooks/useLocationPicker";
@@ -21,6 +22,8 @@ export default function MapView() {
   const mapRef = useRef<maplibregl.Map | null>(null);
 
   const { openDrawer, closeDrawer, isOpen: drawerOpen } = useDrawer();
+  const { activeRole, activeOrg } = useOrg();
+  const mapReadyRef = useRef(false);
   const openDrawerRef = useRef(openDrawer);
   useEffect(() => { openDrawerRef.current = openDrawer; }, [openDrawer]);
 
@@ -125,23 +128,53 @@ export default function MapView() {
 
     map.on("render", () => markers.applySelection());
 
-    map.once("load", async () => {
-      const { data, error } = await fetchProjects();
-      if (error) {
-        console.error("Failed to load projects:", error);
-        return;
-      }
-      markers.loadProjects(map, data as Project[]);
+    map.once("load", () => {
+      mapReadyRef.current = true;
     });
 
     return () => {
       map.remove();
       mapRef.current = null;
+      mapReadyRef.current = false;
       markers.markersMapRef.current.clear();
       markers.markerObjectsMapRef.current.clear();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reload projects whenever the active org changes (or on first map load)
+  useEffect(() => {
+    if (!activeOrg) return;
+
+    const load = async (map: maplibregl.Map) => {
+      // Clear all existing markers before loading the new org's projects
+      markers.loadProjects(map, []);
+      markers.markersMapRef.current.forEach((el) => el.remove());
+      markers.markersMapRef.current.clear();
+      markers.markerObjectsMapRef.current.forEach((m) => m.remove());
+      markers.markerObjectsMapRef.current.clear();
+
+      const { data, error } = await fetchProjects(activeOrg.organization_id);
+      if (error) {
+        console.error("Failed to load projects:", error);
+        return;
+      }
+      markers.loadProjects(map, data as Project[]);
+    };
+
+    if (mapReadyRef.current && mapRef.current) {
+      void load(mapRef.current);
+    } else {
+      // Map not ready yet — wait for the load event
+      const waitForMap = () => {
+        if (mapRef.current) {
+          mapRef.current.once("load", () => void load(mapRef.current!));
+        }
+      };
+      waitForMap();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeOrg]);
 
 
 
@@ -149,8 +182,8 @@ export default function MapView() {
     <div className={`relative h-full w-full${(isCreating || isEditing) ? " map-creating" : ""}`}>
       <div ref={containerRef} className="h-full w-full" />
 
-      {/* Floating + button — hidden while the drawer is open or creation is in progress */}
-      {!isCreating && !drawerOpen && (
+      {/* Floating + button — hidden while the drawer is open, creation is in progress, or user lacks admin role */}
+      {!isCreating && !drawerOpen && hasMinRole(activeRole, "admin") && (
         <Button
           isIconOnly
           color="primary"

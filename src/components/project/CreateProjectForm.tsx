@@ -12,6 +12,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProjectStatusSelect from "@/components/project/ProjectStatusSelect";
 import ProjectEstimatedTimeSelect from "@/components/project/ProjectEstimatedTimeSelect";
 import type { OrganizationMember } from "@/lib/supabase";
+import { hasMinRole } from "@/lib/supabase";
 
 export default function CreateProjectForm({ mode = "create" }: { mode?: "create" | "edit" }) {
   const {
@@ -229,7 +230,7 @@ export default function CreateProjectForm({ mode = "create" }: { mode?: "create"
           >
             {mode === "edit" ? "Confirm" : "Create Project"}
           </Button>
-          {mode === "edit" && activeRole === "admin" && (
+          {mode === "edit" && hasMinRole(activeRole, "admin") && (
             <Button
               color="danger"
               variant="flat"
@@ -251,7 +252,7 @@ export default function CreateProjectForm({ mode = "create" }: { mode?: "create"
         </div>
       </form>
 
-      {mode === "edit" && activeRole === "admin" && (
+      {mode === "edit" && hasMinRole(activeRole, "admin") && (
         <ConfirmDialog
           isOpen={showDeleteConfirm}
           title="Delete project"

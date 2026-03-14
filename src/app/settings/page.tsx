@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth";
 import type { Organization } from "@/lib/supabase";
+import { hasMinRole } from "@/lib/supabase";
 import {
   getOrgInvitations,
   cancelInvitation,
@@ -15,10 +16,11 @@ import {
 } from "@/lib/invitations";
 import type { Invitation, InvitationWithOrg } from "@/lib/invitations";
 import InviteMemberForm from "@/components/settings/InviteMemberForm";
+import { createOrganization } from "@/lib/organizations";
 
 export default function SettingsPage() {
   const { organizations, activeOrg, activeRole, displayName, setActiveOrg, loading, refreshOrgs } = useOrg();
-  const { session } = useAuth();
+  const { session, systemRole } = useAuth();
   const router = useRouter();
 
   const [orgInvitations, setOrgInvitations] = useState<Invitation[]>([]);
@@ -30,11 +32,14 @@ export default function SettingsPage() {
   const [acceptError, setAcceptError] = useState<string | null>(null);
   const [orgInvitesKey, setOrgInvitesKey] = useState(0);
   const [myInvitesKey, setMyInvitesKey] = useState(0);
+  const [newOrgName, setNewOrgName] = useState("");
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+  const [createOrgError, setCreateOrgError] = useState<string | null>(null);
 
   const refreshOrgInvitations = useCallback(() => setOrgInvitesKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!activeOrg || activeRole !== "admin") return;
+    if (!activeOrg || !hasMinRole(activeRole, "admin")) return;
     const doFetch = async () => {
       const { data } = await getOrgInvitations(activeOrg.organization_id);
       setOrgInvitations(data ?? []);
@@ -83,6 +88,20 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     await signOut();
     router.push("/login");
+  };
+
+  const handleCreateOrg = async () => {
+    if (!session || !newOrgName.trim()) return;
+    setIsCreatingOrg(true);
+    setCreateOrgError(null);
+    const { error } = await createOrganization(newOrgName.trim());
+    setIsCreatingOrg(false);
+    if (error) {
+      setCreateOrgError(error);
+      return;
+    }
+    setNewOrgName("");
+    refreshOrgs();
   };
 
   return (
@@ -176,7 +195,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Admin: Invite Members */}
-        {!loading && activeOrg && activeRole === "admin" && (
+        {!loading && activeOrg && hasMinRole(activeRole, "admin") && (
           <section className="mb-10">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-500">
               Invite Members
@@ -284,6 +303,37 @@ export default function SettingsPage() {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {/* Owner: Create Organization */}
+        {systemRole === "dev" && (
+          <section className="mb-10">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-500">
+              Create Organization
+            </h2>
+            <div className="flex flex-col gap-3 rounded-xl bg-gray-900 px-4 py-4 ring-1 ring-white/10">
+              <Input
+                placeholder="Organization name"
+                variant="bordered"
+                value={newOrgName}
+                onValueChange={(v) => { setNewOrgName(v); setCreateOrgError(null); }}
+                onKeyDown={(e) => e.key === "Enter" && newOrgName.trim() && handleCreateOrg()}
+                isDisabled={isCreatingOrg}
+              />
+              {createOrgError && (
+                <p className="text-xs text-danger">{createOrgError}</p>
+              )}
+              <Button
+                color="primary"
+                isLoading={isCreatingOrg}
+                isDisabled={!newOrgName.trim()}
+                onPress={handleCreateOrg}
+                fullWidth
+              >
+                Create
+              </Button>
+            </div>
           </section>
         )}
 

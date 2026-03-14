@@ -62,12 +62,24 @@ openDrawer(<MyContent />, { title: "Panel Title", backdrop: false, onClose: clea
 
 ## Role-Based UI
 
-Access the user's role via `useOrg()`:
+There are two separate role concepts:
+
+**Org-scoped roles** (`"member" | "admin"`) — stored in `organization_members.role`, accessed via `useOrg()`. Gate UI with `hasMinRole()`:
 
 ```typescript
+import { hasMinRole } from "@/lib/supabase";
 const { activeRole } = useOrg();
-if (activeRole === "admin") { /* show admin controls */ }
+if (hasMinRole(activeRole, "admin")) { /* admin + any higher role */ }
 ```
+
+**System roles** (`"dev"`) — cross-org, stored in the `profiles` table, accessed via `useAuth()`. Used for platform-level capabilities like creating organizations:
+
+```typescript
+const { systemRole } = useAuth();
+if (systemRole === "dev") { /* dev-only UI */ }
+```
+
+Never use raw string comparisons for org roles like `activeRole === "admin"`. Always use `hasMinRole`.
 
 ## Guard Components
 

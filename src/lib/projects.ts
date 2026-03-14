@@ -11,9 +11,13 @@ const PROJECT_FIELDS =
 // ---------------------------------------------------------------------------
 
 export async function fetchProjects(
+  orgId: string,
   client: DbClient = supabase,
 ): Promise<{ data: Project[] | null; error: string | null }> {
-  const { data, error } = await client.from("projects").select(PROJECT_FIELDS);
+  const { data, error } = await client
+    .from("projects")
+    .select(PROJECT_FIELDS)
+    .eq("organization_id", orgId);
   return { data: data as Project[] | null, error: error?.message ?? null };
 }
 

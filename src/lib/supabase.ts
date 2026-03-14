@@ -1,5 +1,23 @@
 import { createClient } from "@supabase/supabase-js";
 
+/** Org-scoped member roles, ordered from least to most privileged. */
+export type Role = "member" | "admin";
+
+const ROLE_RANK: Record<Role, number> = { member: 0, admin: 1 };
+
+/**
+ * Returns true if `userRole` meets or exceeds the required `minRole`.
+ * Use this instead of `activeRole === "admin"` so that higher-privileged roles
+ * automatically inherit lower-role permissions.
+ */
+export function hasMinRole(userRole: string | null, minRole: Role): boolean {
+  if (!userRole || !(userRole in ROLE_RANK)) return false;
+  return ROLE_RANK[userRole as Role] >= ROLE_RANK[minRole];
+}
+
+/** System-level (cross-org) roles. A user with no profile row is a regular user. */
+export type SystemRole = "dev";
+
 export type Project = {
   project_id: string;
   organization_id: string | null;
@@ -25,7 +43,7 @@ export type Organization = {
 export type OrganizationMember = {
   organization_id: string;
   user_id: string;
-  role: string | null;
+  role: Role | null;
   created_at: string;
   display_name: string | null;
 };
