@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@heroui/react";
 import { useOrg } from "@/context/OrgContext";
 
@@ -40,6 +41,7 @@ export default function NavMenu() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const { activeOrg } = useOrg();
+  const pathname = usePathname();
 
   return (
     <>
@@ -59,18 +61,26 @@ export default function NavMenu() {
         {/* Nav links */}
         <nav className="flex-1 px-2 py-4">
           <ul className="space-y-1">
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  title={collapsed ? item.label : undefined}
-                  className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-gray-100 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""}`}
-                >
-                  {item.icon}
-                  {!collapsed && <span>{item.label}</span>}
-                </Link>
-              </li>
-            ))}
+            {navItems.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    title={collapsed ? item.label : undefined}
+                    className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
+                      isActive
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-100 hover:bg-gray-700"
+                    }`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {item.icon}
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
@@ -84,7 +94,12 @@ export default function NavMenu() {
           <Link
             href="/settings"
             title={collapsed ? "Settings" : undefined}
-            className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
+              pathname.startsWith("/settings")
+                ? "bg-blue-600 text-white"
+                : "text-gray-300 hover:bg-gray-700 hover:text-white"
+            }`}
+            aria-current={pathname.startsWith("/settings") ? "page" : undefined}
           >
             {settingsIcon}
             {!collapsed && <span>Settings</span>}
@@ -127,23 +142,36 @@ export default function NavMenu() {
       {mobileOpen && (
         <nav className="bg-gray-900 text-white md:hidden">
           <ul className="space-y-1 px-2 py-4">
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-100 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            ))}
+            {navItems.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                      isActive
+                        ? "bg-blue-600 text-white"
+                        : "text-gray-100 hover:bg-gray-700"
+                    }`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
             <li>
               <Link
                 href="/settings"
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                  pathname.startsWith("/settings")
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                }`}
+                aria-current={pathname.startsWith("/settings") ? "page" : undefined}
               >
                 {settingsIcon}
                 <span>Settings</span>

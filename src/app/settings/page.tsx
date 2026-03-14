@@ -214,6 +214,7 @@ export default function SettingsPage() {
                           {member.display_name ?? "Unnamed member"}
                         </p>
                       </div>
+                      <div style={{ width: "9rem", flexShrink: 0 }}>
                       <Select
                         aria-label="Role"
                         size="sm"
@@ -224,12 +225,12 @@ export default function SettingsPage() {
                           if (role && role !== member.role) handleRoleChange(member.user_id, role);
                         }}
                         isDisabled={updatingRoleId === member.user_id}
-                        className="w-32 shrink-0"
                         classNames={{ trigger: "border-gray-200" }}
                       >
                         <SelectItem key="member">Member</SelectItem>
                         <SelectItem key="admin">Admin</SelectItem>
                       </Select>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -312,6 +313,8 @@ export default function SettingsPage() {
                       <div className="flex flex-col gap-2">
                         <Input
                           autoFocus
+                          autoComplete="off"
+                          data-bwignore="true"
                           placeholder="First and last name"
                           variant="bordered"
                           size="sm"
@@ -356,6 +359,8 @@ export default function SettingsPage() {
                 <Input
                   placeholder="Organization name"
                   variant="bordered"
+                  autoComplete="off"
+                  data-bwignore="true"
                   value={newOrgName}
                   onValueChange={(v) => { setNewOrgName(v); setCreateOrgError(null); }}
                   onKeyDown={(e) => e.key === "Enter" && newOrgName.trim() && handleCreateOrg()}

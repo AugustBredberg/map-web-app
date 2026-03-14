@@ -42,6 +42,8 @@ export default function InviteMemberForm({ organizationId, invitedBy, onInvited 
           type="email"
           placeholder="Email address"
           variant="bordered"
+          autoComplete="off"
+          data-bwignore="true"
           value={email}
           onValueChange={(v) => {
             setEmail(v);
