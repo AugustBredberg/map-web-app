@@ -1,6 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import type { Project } from "@/lib/supabase";
+
+type SortDir = "desc" | "asc";
+
+function SortIcon({ dir }: { dir: SortDir }) {
+  return dir === "desc" ? (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h5m10 4l-4 4m0 0l-4-4m4 4V8" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h5m10-4l-4-4m0 0l-4 4m4-4V16" />
+    </svg>
+  );
+}
 
 function formatListDate(iso: string | null) {
   if (!iso) return null;
@@ -31,6 +46,14 @@ interface Props {
 }
 
 export default function ProjectList({ projects, selectedProjectId, onSelect }: Props) {
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const sorted = [...projects].sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return sortDir === "desc" ? tb - ta : ta - tb;
+  });
+
   if (projects.length === 0) {
     return (
       <div className="flex h-full items-center justify-center px-6 py-12 text-center">
@@ -40,8 +63,20 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
   }
 
   return (
-    <ul className="divide-y divide-gray-100">
-      {projects.map((project) => {
+    <div className="flex flex-col">
+      {/* Sort bar */}
+      <div className="flex items-center justify-end border-b border-gray-100 px-3 py-1.5">
+        <button
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
+          aria-label={`Sort ${sortDir === "desc" ? "ascending" : "descending"}`}
+        >
+          <SortIcon dir={sortDir} />
+          {sortDir === "desc" ? "Newest first" : "Oldest first"}
+        </button>
+      </div>
+      <ul className="divide-y divide-gray-100">
+        {sorted.map((project) => {
         const isSelected = project.project_id === selectedProjectId;
         const date = formatListDate(project.start_time);
 
@@ -79,6 +114,7 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
           </li>
         );
       })}
-    </ul>
+      </ul>
+    </div>
   );
 }
