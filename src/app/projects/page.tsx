@@ -6,8 +6,10 @@ import NavMenu from "@/components/NavMenu";
 import ProjectFilters from "@/components/project/ProjectFilters";
 import ProjectList from "@/components/project/ProjectList";
 import ProjectDetailsPanel from "@/components/project/ProjectDetailsPanel";
+import CreateProjectForm from "@/components/project/CreateProjectForm";
 import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
+import { useNewProject } from "@/context/NewProjectContext";
 import { fetchProjects } from "@/lib/projects";
 import type { ProjectFetchFilters } from "@/lib/projects";
 import { getOrgMembers } from "@/lib/members";
@@ -40,6 +42,16 @@ export default function ProjectsPage() {
   const [activeAssigneeFilters, setActiveAssigneeFilters] = useState<Set<string>>(new Set());
   const { openDrawer } = useDrawer();
   const { activeOrg } = useOrg();
+  const { startCreating, cancelCreating } = useNewProject();
+
+  const handleNewProject = useCallback(() => {
+    startCreating();
+    openDrawer(<CreateProjectForm mode="create" />, {
+      title: "New Project",
+      backdrop: false,
+      onClose: cancelCreating,
+    });
+  }, [openDrawer, startCreating, cancelCreating]);
 
   const handleTimeFilterChange = useCallback((id: string | null) => {
     setActiveTimeFilter(id);
@@ -104,6 +116,22 @@ export default function ProjectsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop: Filters sidebar */}
         <aside className="hidden md:flex md:flex-col md:w-52 shrink-0 border-r border-gray-200 overflow-y-auto">
+          {/* New project button */}
+          <div className="p-3 border-b border-gray-200">
+            <Button
+              color="primary"
+              variant="flat"
+              onPress={handleNewProject}
+              fullWidth
+              startContent={
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              }
+            >
+              Nytt jobb
+            </Button>
+          </div>
           <ProjectFilters
             members={members}
             defaultTimeFilter={activeTimeFilter}

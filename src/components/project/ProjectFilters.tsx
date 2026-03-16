@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Button, Chip } from "@heroui/react";
-import { useDrawer } from "@/context/DrawerContext";
-import { useNewProject } from "@/context/NewProjectContext";
-import CreateProjectForm from "@/components/project/CreateProjectForm";
+import { Chip } from "@heroui/react";
 import type { OrganizationMember } from "@/lib/supabase";
 
 const TIME_FILTERS = [
@@ -118,14 +115,6 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-function PencilSquareIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-    </svg>
-  );
-}
-
 interface Props {
   members?: OrganizationMember[];
   defaultTimeFilter?: string | null;
@@ -155,18 +144,6 @@ export default function ProjectFilters({
   const [activeAssigneeFilters, setActiveAssigneeFilters] = useState<Set<string>>(
     defaultAssigneeFilters ?? new Set(),
   );
-
-  const { openDrawer } = useDrawer();
-  const { startCreating, cancelCreating } = useNewProject();
-
-  const handleNewProject = useCallback(() => {
-    startCreating();
-    openDrawer(<CreateProjectForm mode="create" />, {
-      title: "New Project",
-      backdrop: false,
-      onClose: cancelCreating,
-    });
-  }, [openDrawer, startCreating, cancelCreating]);
 
   const handleTimeFilter = useCallback((id: string) => {
     const next = activeTimeFilter === id ? null : id;
@@ -199,18 +176,6 @@ export default function ProjectFilters({
 
   return (
     <div className="flex flex-col">
-      {/* New Project button */}
-      <div className="p-3 border-b border-gray-200">
-        <Button
-          color="primary"
-          variant="flat"
-          onPress={handleNewProject}
-          fullWidth
-          startContent={<PencilSquareIcon />}
-        >
-          Nytt jobb
-        </Button>
-      </div>
 
       <div className="flex flex-col p-2 gap-1">
         {/* Tid & Idag */}

@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Button } from "@heroui/react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type Project, hasMinRole } from "@/lib/supabase";
+import type { OrganizationMember } from "@/lib/supabase";
 import { fetchProjects } from "@/lib/projects";
+import type { ProjectFetchFilters } from "@/lib/projects";
+import { getOrgMembers } from "@/lib/members";
 import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
 import { useNewProject } from "@/context/NewProjectContext";
@@ -13,6 +16,7 @@ import { useProjectMarkers } from "@/hooks/useProjectMarkers";
 import { useLocationPicker } from "@/hooks/useLocationPicker";
 import CreateProjectForm from "@/components/project/CreateProjectForm";
 import ProjectDetailsPanel from "@/components/project/ProjectDetailsPanel";
+import ProjectFilters from "@/components/project/ProjectFilters";
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
 const MAP_STYLE = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
@@ -24,6 +28,31 @@ export default function MapView() {
   const { openDrawer, closeDrawer, isOpen: drawerOpen } = useDrawer();
   const { activeRole, activeOrg } = useOrg();
   const mapReadyRef = useRef(false);
+
+  // Filter state
+  const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [activeTimeFilter, setActiveTimeFilter] = useState<string | null>("all");
+  const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(new Set());
+  const [activeAssigneeFilters, setActiveAssigneeFilters] = useState<Set<string>>(new Set());
+
+  const handleTimeFilterChange = useCallback((id: string | null) => setActiveTimeFilter(id), []);
+  const handleStatusFiltersChange = useCallback((filters: Set<string>) => setActiveStatusFilters(filters), []);
+  const handleAssigneeFiltersChange = useCallback((filters: Set<string>) => setActiveAssigneeFilters(filters), []);
+
+  const openFiltersDrawer = useCallback(() => {
+    openDrawer(
+      <ProjectFilters
+        members={members}
+        defaultTimeFilter={activeTimeFilter}
+        defaultStatusFilters={activeStatusFilters}
+        defaultAssigneeFilters={activeAssigneeFilters}
+        onTimeFilterChange={handleTimeFilterChange}
+        onStatusFiltersChange={handleStatusFiltersChange}
+        onAssigneeFiltersChange={handleAssigneeFiltersChange}
+      />,
+      { title: "Filters", backdrop: true },
+    );
+  }, [openDrawer, members, activeTimeFilter, activeStatusFilters, activeAssigneeFilters, handleTimeFilterChange, handleStatusFiltersChange, handleAssigneeFiltersChange]);
   const openDrawerRef = useRef(openDrawer);
   useEffect(() => { openDrawerRef.current = openDrawer; }, [openDrawer]);
 
@@ -142,19 +171,23 @@ export default function MapView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reload projects whenever the active org changes (or on first map load)
+  // Reload projects whenever the active org or filters change
   useEffect(() => {
     if (!activeOrg) return;
 
     const load = async (map: maplibregl.Map) => {
-      // Clear all existing markers before loading the new org's projects
       markers.loadProjects(map, []);
       markers.markersMapRef.current.forEach((el) => el.remove());
       markers.markersMapRef.current.clear();
       markers.markerObjectsMapRef.current.forEach((m) => m.remove());
       markers.markerObjectsMapRef.current.clear();
 
-      const { data, error } = await fetchProjects(activeOrg.organization_id);
+      const filters: ProjectFetchFilters = {
+        timeFilter: activeTimeFilter as ProjectFetchFilters["timeFilter"],
+        statusFilters: [...activeStatusFilters].map(Number),
+        assigneeUserIds: [...activeAssigneeFilters],
+      };
+      const { data, error } = await fetchProjects(activeOrg.organization_id, filters);
       if (error) {
         console.error("Failed to load projects:", error);
         return;
@@ -174,6 +207,16 @@ export default function MapView() {
       waitForMap();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeOrg, activeTimeFilter, activeStatusFilters, activeAssigneeFilters]);
+
+  // Load org members once
+  useEffect(() => {
+    if (!activeOrg) return;
+    const load = async () => {
+      const { data } = await getOrgMembers(activeOrg.organization_id);
+      setMembers(data ?? []);
+    };
+    load();
   }, [activeOrg]);
 
 
@@ -181,6 +224,33 @@ export default function MapView() {
   return (
     <div className={`relative h-full w-full${(isCreating || isEditing) ? " map-creating" : ""}`}>
       <div ref={containerRef} className="h-full w-full" />
+
+      {/* Filter toggle button — mobile only */}
+      <Button
+        isIconOnly
+        variant="flat"
+        size="sm"
+        onPress={openFiltersDrawer}
+        aria-label="Toggle filters"
+        className="absolute left-4 top-4 z-10 bg-white shadow-md text-gray-600 md:hidden"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+        </svg>
+      </Button>
+
+      {/* Desktop filter panel — always visible */}
+      <div className="absolute left-4 top-4 z-10 hidden w-52 rounded-xl border border-gray-200 bg-white shadow-xl overflow-y-auto max-h-[calc(100vh-8rem)] md:block">
+        <ProjectFilters
+          members={members}
+          defaultTimeFilter={activeTimeFilter}
+          defaultStatusFilters={activeStatusFilters}
+          defaultAssigneeFilters={activeAssigneeFilters}
+          onTimeFilterChange={handleTimeFilterChange}
+          onStatusFiltersChange={handleStatusFiltersChange}
+          onAssigneeFiltersChange={handleAssigneeFiltersChange}
+        />
+      </div>
 
       {/* Floating + button — hidden while the drawer is open, creation is in progress, or user lacks admin role */}
       {!isCreating && !drawerOpen && hasMinRole(activeRole, "admin") && (
