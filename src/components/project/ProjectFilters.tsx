@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Button } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import { useDrawer } from "@/context/DrawerContext";
 import { useNewProject } from "@/context/NewProjectContext";
 import CreateProjectForm from "@/components/project/CreateProjectForm";
+import type { OrganizationMember } from "@/lib/supabase";
 
 const TIME_FILTERS = [
   {
@@ -126,17 +127,23 @@ function PencilSquareIcon() {
 }
 
 interface Props {
+  members?: OrganizationMember[];
   defaultTimeFilter?: string | null;
   defaultStatusFilters?: Set<string>;
+  defaultAssigneeFilters?: Set<string>;
   onTimeFilterChange: (id: string | null) => void;
   onStatusFiltersChange: (filters: Set<string>) => void;
+  onAssigneeFiltersChange: (filters: Set<string>) => void;
 }
 
 export default function ProjectFilters({
+  members = [],
   defaultTimeFilter = "all",
   defaultStatusFilters,
+  defaultAssigneeFilters,
   onTimeFilterChange,
   onStatusFiltersChange,
+  onAssigneeFiltersChange,
 }: Props) {
   const [timeOpen, setTimeOpen] = useState(true);
   const [statusOpen, setStatusOpen] = useState(true);
@@ -144,6 +151,9 @@ export default function ProjectFilters({
   const [activeTimeFilter, setActiveTimeFilter] = useState<string | null>(defaultTimeFilter);
   const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(
     defaultStatusFilters ?? new Set(),
+  );
+  const [activeAssigneeFilters, setActiveAssigneeFilters] = useState<Set<string>>(
+    defaultAssigneeFilters ?? new Set(),
   );
 
   const { openDrawer } = useDrawer();
@@ -179,6 +189,13 @@ export default function ProjectFilters({
     setActiveStatusFilters(next);
     onStatusFiltersChange(next);
   }, [activeStatusFilters, onStatusFiltersChange]);
+
+  const handleAssigneeFilter = useCallback((userId: string) => {
+    const next = new Set(activeAssigneeFilters);
+    if (next.has(userId)) { next.delete(userId); } else { next.add(userId); }
+    setActiveAssigneeFilters(next);
+    onAssigneeFiltersChange(next);
+  }, [activeAssigneeFilters, onAssigneeFiltersChange]);
 
   return (
     <div className="flex flex-col">
@@ -278,7 +295,27 @@ export default function ProjectFilters({
             Personer
           </button>
           {peopleOpen && (
-            <p className="px-3 py-2 text-xs text-gray-400">No members loaded</p>
+            members.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-gray-400">No members</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 px-2 py-1.5">
+                {members.map((m) => {
+                  const selected = activeAssigneeFilters.has(m.user_id);
+                  return (
+                    <Chip
+                      key={m.user_id}
+                      size="sm"
+                      variant={selected ? "flat" : "bordered"}
+                      color={selected ? "primary" : "default"}
+                      className="cursor-pointer select-none"
+                      onClick={() => handleAssigneeFilter(m.user_id)}
+                    >
+                      {m.display_name ?? m.user_id}
+                    </Chip>
+                  );
+                })}
+              </div>
+            )
           )}
         </div>
       </div>

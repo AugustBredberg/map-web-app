@@ -13,16 +13,22 @@ const PROJECT_FIELDS =
 export interface ProjectFetchFilters {
   timeFilter: "today" | "all" | null;
   statusFilters: number[];
+  assigneeUserIds: string[];
 }
 
 export async function fetchProjects(
   orgId: string,
-  filters: ProjectFetchFilters = { timeFilter: "all", statusFilters: [] },
+  filters: ProjectFetchFilters = { timeFilter: "all", statusFilters: [], assigneeUserIds: [] },
   client: DbClient = supabase,
 ): Promise<{ data: Project[] | null; error: string | null }> {
+  const selectFields =
+    filters.assigneeUserIds.length > 0
+      ? `${PROJECT_FIELDS}, project_assignees!inner(user_id)`
+      : PROJECT_FIELDS;
+
   let query = client
     .from("projects")
-    .select(PROJECT_FIELDS)
+    .select(selectFields)
     .eq("organization_id", orgId);
 
   if (filters.timeFilter === "today") {
@@ -37,6 +43,10 @@ export async function fetchProjects(
 
   if (filters.statusFilters.length > 0) {
     query = query.in("project_status", filters.statusFilters);
+  }
+
+  if (filters.assigneeUserIds.length > 0) {
+    query = query.in("project_assignees.user_id", filters.assigneeUserIds);
   }
 
   const { data, error } = await query;

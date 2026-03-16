@@ -10,7 +10,8 @@ import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
 import { fetchProjects } from "@/lib/projects";
 import type { ProjectFetchFilters } from "@/lib/projects";
-import type { Project } from "@/lib/supabase";
+import { getOrgMembers } from "@/lib/members";
+import type { Project, OrganizationMember } from "@/lib/supabase";
 
 function FilterIcon() {
   return (
@@ -33,8 +34,10 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [activeTimeFilter, setActiveTimeFilter] = useState<string | null>("all");
   const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(new Set());
+  const [activeAssigneeFilters, setActiveAssigneeFilters] = useState<Set<string>>(new Set());
   const { openDrawer } = useDrawer();
   const { activeOrg } = useOrg();
 
@@ -46,6 +49,10 @@ export default function ProjectsPage() {
     setActiveStatusFilters(filters);
   }, []);
 
+  const handleAssigneeFiltersChange = useCallback((filters: Set<string>) => {
+    setActiveAssigneeFilters(filters);
+  }, []);
+
   useEffect(() => {
     if (!activeOrg) return;
     const load = async () => {
@@ -54,6 +61,7 @@ export default function ProjectsPage() {
       const filters: ProjectFetchFilters = {
         timeFilter: activeTimeFilter as ProjectFetchFilters["timeFilter"],
         statusFilters: [...activeStatusFilters].map(Number),
+        assigneeUserIds: [...activeAssigneeFilters],
       };
       const { data, error } = await fetchProjects(activeOrg.organization_id, filters);
       if (error) {
@@ -65,19 +73,31 @@ export default function ProjectsPage() {
       setLoadingProjects(false);
     };
     load();
-  }, [activeOrg, activeTimeFilter, activeStatusFilters]);
+  }, [activeOrg, activeTimeFilter, activeStatusFilters, activeAssigneeFilters]);
+
+  useEffect(() => {
+    if (!activeOrg) return;
+    const load = async () => {
+      const { data } = await getOrgMembers(activeOrg.organization_id);
+      setMembers(data ?? []);
+    };
+    load();
+  }, [activeOrg]);
 
   const openFiltersDrawer = useCallback(() => {
     openDrawer(
       <ProjectFilters
+        members={members}
         defaultTimeFilter={activeTimeFilter}
         defaultStatusFilters={activeStatusFilters}
+        defaultAssigneeFilters={activeAssigneeFilters}
         onTimeFilterChange={handleTimeFilterChange}
         onStatusFiltersChange={handleStatusFiltersChange}
+        onAssigneeFiltersChange={handleAssigneeFiltersChange}
       />,
       { title: "Filters", backdrop: true },
     );
-  }, [openDrawer, activeTimeFilter, activeStatusFilters, handleTimeFilterChange, handleStatusFiltersChange]);
+  }, [openDrawer, members, activeTimeFilter, activeStatusFilters, activeAssigneeFilters, handleTimeFilterChange, handleStatusFiltersChange, handleAssigneeFiltersChange]);
 
   return (
     <NavMenu>
@@ -85,10 +105,13 @@ export default function ProjectsPage() {
         {/* Desktop: Filters sidebar */}
         <aside className="hidden md:flex md:flex-col md:w-52 shrink-0 border-r border-gray-200 overflow-y-auto">
           <ProjectFilters
+            members={members}
             defaultTimeFilter={activeTimeFilter}
             defaultStatusFilters={activeStatusFilters}
+            defaultAssigneeFilters={activeAssigneeFilters}
             onTimeFilterChange={handleTimeFilterChange}
             onStatusFiltersChange={handleStatusFiltersChange}
+            onAssigneeFiltersChange={handleAssigneeFiltersChange}
           />
         </aside>
 
