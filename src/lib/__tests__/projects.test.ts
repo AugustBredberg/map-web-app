@@ -19,14 +19,14 @@ const sampleProject = {
 describe("fetchProjects", () => {
   it("returns projects on success", async () => {
     const client = mockClient({ data: [sampleProject], error: null });
-    const { data } = await fetchProjects("org1", client);
+    const { data } = await fetchProjects("org1", undefined, client);
     expect(data).toEqual([sampleProject]);
     expect(client.from).toHaveBeenCalledWith("projects");
   });
 
   it("returns error message on failure", async () => {
     const client = mockClient({ data: null, error: { message: "db down" } });
-    const { data, error } = await fetchProjects("org1", client);
+    const { data, error } = await fetchProjects("org1", undefined, client);
     expect(data).toBeNull();
     expect(error).toBe("db down");
   });

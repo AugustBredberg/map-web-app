@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Button } from "@heroui/react";
+import { useState, useCallback, useEffect } from "react";
+import { Button, Spinner } from "@heroui/react";
 import NavMenu from "@/components/NavMenu";
 import ProjectFilters from "@/components/project/ProjectFilters";
 import ProjectList from "@/components/project/ProjectList";
 import ProjectDetailsPanel from "@/components/project/ProjectDetailsPanel";
 import { useDrawer } from "@/context/DrawerContext";
+import { useOrg } from "@/context/OrgContext";
+import { fetchProjects } from "@/lib/projects";
+import type { ProjectFetchFilters } from "@/lib/projects";
 import type { Project } from "@/lib/supabase";
-
-const EMPTY_PROJECTS: Project[] = [];
 
 function FilterIcon() {
   return (
@@ -29,18 +30,66 @@ function BackIcon() {
 
 export default function ProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [activeTimeFilter, setActiveTimeFilter] = useState<string | null>("all");
+  const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(new Set());
   const { openDrawer } = useDrawer();
+  const { activeOrg } = useOrg();
+
+  const handleTimeFilterChange = useCallback((id: string | null) => {
+    setActiveTimeFilter(id);
+  }, []);
+
+  const handleStatusFiltersChange = useCallback((filters: Set<string>) => {
+    setActiveStatusFilters(filters);
+  }, []);
+
+  useEffect(() => {
+    if (!activeOrg) return;
+    const load = async () => {
+      setLoadingProjects(true);
+      setProjectsError(null);
+      const filters: ProjectFetchFilters = {
+        timeFilter: activeTimeFilter as ProjectFetchFilters["timeFilter"],
+        statusFilters: [...activeStatusFilters].map(Number),
+      };
+      const { data, error } = await fetchProjects(activeOrg.organization_id, filters);
+      if (error) {
+        setProjectsError(error);
+        setProjects([]);
+      } else {
+        setProjects(data ?? []);
+      }
+      setLoadingProjects(false);
+    };
+    load();
+  }, [activeOrg, activeTimeFilter, activeStatusFilters]);
 
   const openFiltersDrawer = useCallback(() => {
-    openDrawer(<ProjectFilters />, { title: "Filters", backdrop: true });
-  }, [openDrawer]);
+    openDrawer(
+      <ProjectFilters
+        defaultTimeFilter={activeTimeFilter}
+        defaultStatusFilters={activeStatusFilters}
+        onTimeFilterChange={handleTimeFilterChange}
+        onStatusFiltersChange={handleStatusFiltersChange}
+      />,
+      { title: "Filters", backdrop: true },
+    );
+  }, [openDrawer, activeTimeFilter, activeStatusFilters, handleTimeFilterChange, handleStatusFiltersChange]);
 
   return (
     <NavMenu>
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop: Filters sidebar */}
         <aside className="hidden md:flex md:flex-col md:w-52 shrink-0 border-r border-gray-200 overflow-y-auto">
-          <ProjectFilters />
+          <ProjectFilters
+            defaultTimeFilter={activeTimeFilter}
+            defaultStatusFilters={activeStatusFilters}
+            onTimeFilterChange={handleTimeFilterChange}
+            onStatusFiltersChange={handleStatusFiltersChange}
+          />
         </aside>
 
         {/* Project list column */}
@@ -64,11 +113,21 @@ export default function ProjectsPage() {
           </div>
           {/* List */}
           <div className="flex-1 overflow-y-auto">
-            <ProjectList
-              projects={EMPTY_PROJECTS}
-              selectedProjectId={selectedProject?.project_id ?? null}
-              onSelect={setSelectedProject}
-            />
+            {loadingProjects ? (
+              <div className="flex h-full items-center justify-center py-12">
+                <Spinner size="sm" />
+              </div>
+            ) : projectsError ? (
+              <div className="flex h-full items-center justify-center px-6 py-12 text-center">
+                <p className="text-sm text-red-500">{projectsError}</p>
+              </div>
+            ) : (
+              <ProjectList
+                projects={projects}
+                selectedProjectId={selectedProject?.project_id ?? null}
+                onSelect={setSelectedProject}
+              />
+            )}
           </div>
         </div>
 

@@ -10,14 +10,36 @@ const PROJECT_FIELDS =
 // Fetch
 // ---------------------------------------------------------------------------
 
+export interface ProjectFetchFilters {
+  timeFilter: "today" | "all" | null;
+  statusFilters: number[];
+}
+
 export async function fetchProjects(
   orgId: string,
+  filters: ProjectFetchFilters = { timeFilter: "all", statusFilters: [] },
   client: DbClient = supabase,
 ): Promise<{ data: Project[] | null; error: string | null }> {
-  const { data, error } = await client
+  let query = client
     .from("projects")
     .select(PROJECT_FIELDS)
     .eq("organization_id", orgId);
+
+  if (filters.timeFilter === "today") {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    query = query
+      .gte("start_time", start.toISOString())
+      .lt("start_time", end.toISOString());
+  }
+
+  if (filters.statusFilters.length > 0) {
+    query = query.in("project_status", filters.statusFilters);
+  }
+
+  const { data, error } = await query;
   return { data: data as Project[] | null, error: error?.message ?? null };
 }
 

@@ -125,12 +125,26 @@ function PencilSquareIcon() {
   );
 }
 
-export default function ProjectFilters() {
+interface Props {
+  defaultTimeFilter?: string | null;
+  defaultStatusFilters?: Set<string>;
+  onTimeFilterChange: (id: string | null) => void;
+  onStatusFiltersChange: (filters: Set<string>) => void;
+}
+
+export default function ProjectFilters({
+  defaultTimeFilter = "all",
+  defaultStatusFilters,
+  onTimeFilterChange,
+  onStatusFiltersChange,
+}: Props) {
   const [timeOpen, setTimeOpen] = useState(true);
   const [statusOpen, setStatusOpen] = useState(true);
   const [peopleOpen, setPeopleOpen] = useState(true);
-  const [activeTimeFilter, setActiveTimeFilter] = useState<string | null>("all");
-  const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(new Set());
+  const [activeTimeFilter, setActiveTimeFilter] = useState<string | null>(defaultTimeFilter);
+  const [activeStatusFilters, setActiveStatusFilters] = useState<Set<string>>(
+    defaultStatusFilters ?? new Set(),
+  );
 
   const { openDrawer } = useDrawer();
   const { startCreating, cancelCreating } = useNewProject();
@@ -145,24 +159,26 @@ export default function ProjectFilters() {
   }, [openDrawer, startCreating, cancelCreating]);
 
   const handleTimeFilter = useCallback((id: string) => {
-    setActiveTimeFilter((prev) => (prev === id ? null : id));
-  }, []);
+    const next = activeTimeFilter === id ? null : id;
+    setActiveTimeFilter(next);
+    onTimeFilterChange(next);
+  }, [activeTimeFilter, onTimeFilterChange]);
 
   const handleStatusFilter = useCallback((id: string) => {
-    setActiveStatusFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); } else { next.add(id); }
-      return next;
-    });
-  }, []);
+    const next = new Set(activeStatusFilters);
+    if (next.has(id)) { next.delete(id); } else { next.add(id); }
+    setActiveStatusFilters(next);
+    onStatusFiltersChange(next);
+  }, [activeStatusFilters, onStatusFiltersChange]);
 
   const handleSelectAllStatuses = useCallback(() => {
-    setActiveStatusFilters((prev) =>
-      prev.size === STATUS_FILTERS.length
-        ? new Set()
-        : new Set(STATUS_FILTERS.map((f) => f.id))
-    );
-  }, []);
+    const next =
+      activeStatusFilters.size === STATUS_FILTERS.length
+        ? new Set<string>()
+        : new Set(STATUS_FILTERS.map((f) => f.id));
+    setActiveStatusFilters(next);
+    onStatusFiltersChange(next);
+  }, [activeStatusFilters, onStatusFiltersChange]);
 
   return (
     <div className="flex flex-col">
