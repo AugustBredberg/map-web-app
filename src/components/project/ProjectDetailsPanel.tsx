@@ -11,7 +11,7 @@ import CreateProjectForm from "@/components/project/CreateProjectForm";
 import ProjectStatusBadge from "@/components/project/ProjectStatusBadge";
 import type { Project } from "@/lib/supabase";
 import { hasMinRole } from "@/lib/supabase";
-import type { ProjectStatus } from "@/context/NewProjectContext";
+import type { ProjectStatus } from "@/lib/projectStatus";
 
 interface Props {
   project: Project;

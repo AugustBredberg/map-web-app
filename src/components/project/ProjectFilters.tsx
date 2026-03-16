@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Chip } from "@heroui/react";
 import type { OrganizationMember } from "@/lib/supabase";
+import { STATUS_LABELS, STATUS_ICON_PATHS } from "@/lib/projectStatus";
 
 const TIME_FILTERS = [
   {
@@ -34,71 +35,15 @@ const TIME_FILTERS = [
 //   },
 ];
 
-const STATUS_FILTERS = [
-  {
-    id: "0",
-    label: "Lead",
-    icon: (
-      <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
-      </svg>
-    ),
-  },
-  {
-    id: "1",
-    label: "Offered",
-    icon: (
-      <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12zm0 0h7.5" />
-      </svg>
-    ),
-  },
-  {
-    id: "2",
-    label: "Accepted",
-    icon: (
-      <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
-      </svg>
-    ),
-  },
-  {
-    id: "3",
-    label: "Ongoing",
-    icon: (
-      <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
-      </svg>
-    ),
-  },
-  {
-    id: "4",
-    label: "Done",
-    icon: (
-      <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
-      </svg>
-    ),
-  },
-  {
-    id: "5",
-    label: "Invoicing",
-    icon: (
-      <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75A2.25 2.25 0 0 1 4.5 4.5h15a2.25 2.25 0 0 1 2.25 2.25v10.5A2.25 2.25 0 0 1 19.5 19.5h-15A2.25 2.25 0 0 1 2.25 17.25V6.75zM2.25 8.25h19.5M5.25 14.25h6M5.25 16.5h3" />
-      </svg>
-    ),
-  },
-  {
-    id: "6",
-    label: "Paid",
-    icon: (
-      <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
-      </svg>
-    ),
-  },
-];
+const STATUS_FILTERS = Object.entries(STATUS_LABELS).map(([id, label]) => ({
+  id,
+  label,
+  icon: (
+    <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
+      <path strokeLinecap="round" strokeLinejoin="round" d={STATUS_ICON_PATHS[Number(id)]} />
+    </svg>
+  ),
+}));
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (

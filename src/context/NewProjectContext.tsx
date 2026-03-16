@@ -12,23 +12,14 @@ import { type ZonedDateTime, parseAbsoluteToLocal } from "@internationalized/dat
 import type { Project } from "@/lib/supabase";
 import { createProject, updateProject, deleteProject as deleteProjectLib } from "@/lib/projects";
 import { useOrg } from "@/context/OrgContext";
+import { type ProjectStatus, PROJECT_STATUSES } from "@/lib/projectStatus";
+export type { ProjectStatus };
+export { PROJECT_STATUSES };
 
 export interface PickedLocation {
   lng: number;
   lat: number;
 }
-
-export const PROJECT_STATUSES = [
-  { value: 0, label: "Lead" },
-  { value: 1, label: "Offered" },
-  { value: 2, label: "Accepted" },
-  { value: 3, label: "Ongoing" },
-  { value: 4, label: "Done" },
-  { value: 5, label: "Invoicing" },
-  { value: 6, label: "Paid" },
-] as const;
-
-export type ProjectStatus = (typeof PROJECT_STATUSES)[number]["value"];
 
 interface NewProjectContextValue {
   isCreating: boolean;

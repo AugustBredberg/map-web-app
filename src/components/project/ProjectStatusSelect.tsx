@@ -1,6 +1,6 @@
 "use client";
 
-import { PROJECT_STATUSES, type ProjectStatus } from "@/context/NewProjectContext";
+import { PROJECT_STATUSES, type ProjectStatus } from "@/lib/projectStatus";
 import ProjectStatusBadge from "@/components/project/ProjectStatusBadge";
 
 interface Props {
