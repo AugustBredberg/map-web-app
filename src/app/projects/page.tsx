@@ -46,7 +46,7 @@ export default function ProjectsPage() {
 
   const handleNewProject = useCallback(() => {
     startCreating();
-    openDrawer(<CreateProjectForm mode="create" />, {
+    openDrawer(<CreateProjectForm />, {
       title: "New Project",
       backdrop: false,
       onClose: cancelCreating,
