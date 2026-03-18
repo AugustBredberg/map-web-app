@@ -12,10 +12,11 @@ export interface StatusMeta {
 
 export const STATUS_LABELS: Record<number, string> = {
   0: "New",
-  1: "Ongoing",
-  2: "Blocked",
-  3: "Done",
-  4: "Cancelled",
+  1: "Customer Visit",
+  2: "Ongoing",
+  3: "Blocked",
+  4: "Done",
+  5: "Cancelled",
 };
 
 /*
@@ -31,29 +32,32 @@ Kanske att vi ska ändra statusarna till:
 */
 
 export const STATUS_META: Record<number, StatusMeta> = {
-  0: { description: "New job",  iconColor: "text-slate-600",   border: "border-slate-400",   bg: "bg-slate-50"   },
-  1: { description: "Work ongoing",    iconColor: "text-blue-500",    border: "border-blue-400",    bg: "bg-blue-50"    },
-  2: { description: "Work blocked",  iconColor: "text-amber-500",  border: "border-amber-400",  bg: "bg-amber-50"  },
-  3: { description: "Job is done", iconColor: "text-green-500",   border: "border-green-400",   bg: "bg-green-50"   },
-  4: { description: "Job was cancelled",   iconColor: "text-red-600", border: "border-red-400", bg: "bg-red-50" },
+  0: { description: "New job",            iconColor: "text-slate-600",  border: "border-slate-400",  bg: "bg-slate-50"  },
+  1: { description: "Customer visit",      iconColor: "text-violet-500", border: "border-violet-400", bg: "bg-violet-50" },
+  2: { description: "Work ongoing",         iconColor: "text-blue-500",   border: "border-blue-400",   bg: "bg-blue-50"   },
+  3: { description: "Work blocked",         iconColor: "text-amber-500",  border: "border-amber-400",  bg: "bg-amber-50"  },
+  4: { description: "Job is done",          iconColor: "text-green-500",  border: "border-green-400",  bg: "bg-green-50"  },
+  5: { description: "Job was cancelled",    iconColor: "text-red-600",    border: "border-red-400",    bg: "bg-red-50"    },
 };
 
 /** Solid hex colours used for map pin rendering (matches STATUS_META iconColor). */
 export const STATUS_SOLID_COLORS: Record<number, string> = {
   0: "#475569", // slate-600
-  1: "#3b82f6", // blue-500
-  2: "#f59e0b", // amber-500
-  3: "#16a34a", // green-500
-  4: "#dc2626", // red-600
+  1: "#8b5cf6", // violet-500
+  2: "#3b82f6", // blue-500
+  3: "#f59e0b", // amber-500
+  4: "#16a34a", // green-500
+  5: "#dc2626", // red-600
 };
 
 /** SVG path `d` attribute for each status icon (Heroicons outline, 24×24 viewBox). */
 export const STATUS_ICON_PATHS: Record<number, string> = {
   0: "M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12zm0 0h7.5",
-  1: "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
-  2: "M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
-  3: "M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5",
-  4: "M9.75 9.75l4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+  1: "M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0zM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632z",
+  2: "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+  3: "M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+  4: "M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5",
+  5: "M9.75 9.75l4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
 };
 
 export const PROJECT_STATUSES = Object.entries(STATUS_LABELS).map(([key, label]) => ({
@@ -61,4 +65,38 @@ export const PROJECT_STATUSES = Object.entries(STATUS_LABELS).map(([key, label])
   label,
 }));
 
-export type ProjectStatus = 0 | 1 | 2 | 3 | 4;
+export type ProjectStatus = 0 | 1 | 2 | 3 | 4 | 5;
+
+export interface StatusTransition {
+  to: ProjectStatus;
+  /** Call-to-action label shown on the button */
+  label: string;
+  /** Primary transitions are shown as large prominent buttons */
+  primary: boolean;
+  color: "primary" | "success" | "warning" | "default";
+}
+
+/**
+ * Allowed status transitions from each state.
+ * States with no entry (Done=4) have no outgoing transitions.
+ */
+export const STATUS_TRANSITIONS: Partial<Record<ProjectStatus, StatusTransition[]>> = {
+  0: [
+    { to: 1, label: "Start Customer Visit", primary: true,  color: "primary"  },
+    { to: 2, label: "Start Work",           primary: true,  color: "primary"  },
+  ],
+  1: [
+    { to: 2, label: "Start Work",           primary: true,  color: "primary"  },
+  ],
+  2: [
+    { to: 4, label: "Complete Job",         primary: true,  color: "success"  },
+    { to: 3, label: "Report Blockage",      primary: false, color: "warning"  },
+  ],
+  3: [
+    { to: 2, label: "Resume Work",          primary: true,  color: "primary"  },
+  ],
+  4: [],
+  5: [
+    { to: 0, label: "Reopen Job",           primary: true,  color: "default"  },
+  ],
+};

@@ -69,9 +69,12 @@ export default function MapView() {
       });
     }
 
-    openDrawerRef.current(<ProjectDetailsPanel project={project} onEditClose={() => {
-      markers.selectedProjectIdRef.current = null;
-      markers.applySelection();
+    openDrawerRef.current(<ProjectDetailsPanel project={project} onProjectUpdated={(updated) => {
+      if (mapRef.current) {
+        markers.removeProjectMarker(updated.project_id);
+        markers.addProjectMarker(mapRef.current, updated);
+        markers.applySelection();
+      }
     }} />, {
       title: project.title,
       backdrop: false,
@@ -86,28 +89,17 @@ export default function MapView() {
 
   const {
     isCreating,
-    isEditing,
-    editingProjectId,
     location: pickedLocation,
     setLocation,
     startCreating,
     cancelCreating,
     setOnProjectSaved,
-    setOnProjectDeleted,
   } = useNewProject();
 
-  const isPickerActive = isCreating || isEditing;
-  const tempMarkerRef = useLocationPicker(mapRef, isPickerActive, setLocation, isEditing ? pickedLocation : null);
-
-  // Register a callback so the context can notify us after a successful save
-  const editingProjectIdRef = useRef(editingProjectId);
-  useEffect(() => { editingProjectIdRef.current = editingProjectId; }, [editingProjectId]);
+  const tempMarkerRef = useLocationPicker(mapRef, isCreating, setLocation, null);
 
   useEffect(() => {
     setOnProjectSaved((project: Project) => {
-      if (editingProjectIdRef.current) {
-        markers.removeProjectMarker(editingProjectIdRef.current);
-      }
       tempMarkerRef.current?.remove();
       tempMarkerRef.current = null;
       if (mapRef.current) {
@@ -117,16 +109,6 @@ export default function MapView() {
     });
     return () => setOnProjectSaved(null);
   }, [setOnProjectSaved, closeDrawer, markers, tempMarkerRef]);
-
-  useEffect(() => {
-    setOnProjectDeleted((projectId: string) => {
-      markers.removeProjectMarker(projectId);
-      tempMarkerRef.current?.remove();
-      tempMarkerRef.current = null;
-      closeDrawer();
-    });
-    return () => setOnProjectDeleted(null);
-  }, [setOnProjectDeleted, closeDrawer, markers, tempMarkerRef]);
 
   const handleAddClick = useCallback(() => {
     startCreating();
@@ -222,7 +204,7 @@ export default function MapView() {
 
 
   return (
-    <div className={`relative h-full w-full${(isCreating || isEditing) ? " map-creating" : ""}`}>
+    <div className={`relative h-full w-full${isCreating ? " map-creating" : ""}`}>
       <div ref={containerRef} className="h-full w-full" />
 
       {/* Filter toggle button — mobile only */}
@@ -281,7 +263,7 @@ export default function MapView() {
       )}
 
       {/* Map hint — nudge the user to click the map when no location is set yet */}
-      {(isCreating || isEditing) && !pickedLocation && (
+      {isCreating && !pickedLocation && (
         <div className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 rounded-xl bg-gray-900/80 px-4 py-2.5 shadow-lg backdrop-blur-sm">
           <span className="text-sm text-white">Tap the map to set a location</span>
         </div>

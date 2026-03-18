@@ -4,7 +4,7 @@ import type { Project } from "@/lib/supabase";
 type DbClient = typeof supabase;
 
 const PROJECT_FIELDS =
-  "project_id, created_at, updated_at, created_by, organization_id, title, description, estimated_time, location, project_status, start_time";
+  "project_id, created_at, updated_at, created_by, organization_id, title, description, location, project_status, start_time";
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -60,7 +60,6 @@ export async function fetchProjects(
 export interface CreateProjectInput {
   title: string;
   description: string | null;
-  estimated_time: number | null;
   project_status: number;
   start_time: string | null;
   location: string; // WKT e.g. "POINT(lng lat)"
@@ -99,73 +98,21 @@ export async function createProject(
 }
 
 // ---------------------------------------------------------------------------
-// Update
+// Update status
 // ---------------------------------------------------------------------------
 
-export interface UpdateProjectInput {
-  title: string;
-  description: string | null;
-  estimated_time: number | null;
-  project_status: number;
-  start_time: string | null;
-  location: string; // WKT e.g. "POINT(lng lat)"
-}
-
-export async function updateProject(
+export async function updateProjectStatus(
   projectId: string,
-  input: UpdateProjectInput,
-  assigneeIds: string[],
-  organizationId: string | null,
+  status: number,
   client: DbClient = supabase,
 ): Promise<{ data: Project | null; error: string | null }> {
   const { data, error } = await client
     .from("projects")
-    .update({ ...input, updated_at: new Date().toISOString() })
+    .update({ project_status: status, updated_at: new Date().toISOString() })
     .eq("project_id", projectId)
     .select(PROJECT_FIELDS)
     .single();
-
-  if (error) return { data: null, error: error.message };
-
-  const project = data as Project;
-
-  // Replace assignees: wipe then re-insert
-  await client.from("project_assignees").delete().eq("project_id", projectId);
-
-  if (assigneeIds.length > 0) {
-    const { error: assigneeError } = await client.from("project_assignees").insert(
-      assigneeIds.map((userId) => ({
-        project_id: projectId,
-        user_id: userId,
-        organization_id: organizationId,
-      })),
-    );
-    if (assigneeError) {
-      console.error("Failed to update assignees:", assigneeError.message);
-    }
-  }
-
-  return { data: project, error: null };
+  return { data: data as Project | null, error: error?.message ?? null };
 }
 
-// ---------------------------------------------------------------------------
-// Delete
-// ---------------------------------------------------------------------------
 
-export async function deleteProject(
-  projectId: string,
-  client: DbClient = supabase,
-): Promise<{ error: string | null }> {
-  const { error: assigneesError } = await client
-    .from("project_assignees")
-    .delete()
-    .eq("project_id", projectId);
-
-  if (assigneesError) return { error: assigneesError.message };
-
-  const { error } = await client
-    .from("projects")
-    .delete()
-    .eq("project_id", projectId);
-  return { error: error?.message ?? null };
-}

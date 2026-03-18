@@ -29,7 +29,6 @@ export type Project = {
   project_status: number | null;
   title: string;
   description: string | null;
-  estimated_time: number | null;
   // PostGIS geometry column — returned as GeoJSON by the REST API
   location: { type: "Point"; coordinates: [number, number] } | null;
 };
