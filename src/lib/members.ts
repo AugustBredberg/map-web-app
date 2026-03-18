@@ -63,8 +63,16 @@ export async function getProjectAssignees(
 
   if (memberError) return { data: null, error: memberError.message };
 
+  const seen = new Set<string>();
+  const unique = (memberRows ?? []).filter((m) => {
+    const id = m.user_id as string;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+
   return {
-    data: (memberRows ?? []).map((m) => ({
+    data: unique.map((m) => ({
       id: m.user_id as string,
       name: (m.display_name as string | null) ?? (m.user_id as string),
     })),

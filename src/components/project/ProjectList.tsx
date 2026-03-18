@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Project } from "@/lib/supabase";
+import { STATUS_SOLID_COLORS } from "@/lib/projectStatus";
 
 type SortDir = "desc" | "asc";
 
@@ -24,19 +25,6 @@ function formatListDate(iso: string | null) {
     day: "numeric",
     month: "long",
   });
-}
-
-function statusDotColor(status: number | null): string {
-  switch (status) {
-    case 0: return "bg-slate-400";
-    case 1: return "bg-blue-500";
-    case 2: return "bg-violet-500";
-    case 3: return "bg-amber-500";
-    case 4: return "bg-emerald-500";
-    case 5: return "bg-orange-500";
-    case 6: return "bg-green-500";
-    default: return "bg-gray-300";
-  }
 }
 
 interface Props {
@@ -104,7 +92,8 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 <span
-                  className={`mt-0.5 h-2.5 w-2.5 rounded-full ${statusDotColor(project.project_status)}`}
+                  className="mt-0.5 h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: STATUS_SOLID_COLORS[project.project_status ?? -1] ?? "#d1d5db" }}
                 />
                 {date && (
                   <span className="text-xs text-gray-400">{date}</span>
