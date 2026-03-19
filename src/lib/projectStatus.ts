@@ -69,8 +69,8 @@ export type ProjectStatus = 0 | 1 | 2 | 3 | 4 | 5;
 
 export interface StatusTransition {
   to: ProjectStatus;
-  /** Call-to-action label shown on the button */
-  label: string;
+  /** Translation key for the call-to-action label (looked up via i18n statusTransitions.*) */
+  labelKey: string;
   /** Primary transitions are shown as large prominent buttons */
   primary: boolean;
   color: "primary" | "success" | "warning" | "default";
@@ -82,21 +82,21 @@ export interface StatusTransition {
  */
 export const STATUS_TRANSITIONS: Partial<Record<ProjectStatus, StatusTransition[]>> = {
   0: [
-    { to: 1, label: "Start Customer Visit", primary: true,  color: "primary"  },
-    { to: 2, label: "Start Work",           primary: true,  color: "primary"  },
+    { to: 1, labelKey: "startCustomerVisit", primary: true,  color: "primary"  },
+    { to: 2, labelKey: "startWork",          primary: true,  color: "primary"  },
   ],
   1: [
-    { to: 2, label: "Start Work",           primary: true,  color: "primary"  },
+    { to: 2, labelKey: "startWork",          primary: true,  color: "primary"  },
   ],
   2: [
-    { to: 4, label: "Complete Job",         primary: true,  color: "success"  },
-    { to: 3, label: "Report Blockage",      primary: false, color: "warning"  },
+    { to: 4, labelKey: "completeJob",        primary: true,  color: "success"  },
+    { to: 3, labelKey: "reportBlockage",     primary: false, color: "warning"  },
   ],
   3: [
-    { to: 2, label: "Resume Work",          primary: true,  color: "primary"  },
+    { to: 2, labelKey: "resumeWork",         primary: true,  color: "primary"  },
   ],
   4: [],
   5: [
-    { to: 0, label: "Reopen Job",           primary: true,  color: "default"  },
+    { to: 0, labelKey: "reopenJob",          primary: true,  color: "default"  },
   ],
 };

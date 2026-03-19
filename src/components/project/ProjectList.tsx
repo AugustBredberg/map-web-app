@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { Project } from "@/lib/supabase";
 import { STATUS_SOLID_COLORS } from "@/lib/projectStatus";
+import { useLocale } from "@/context/LocaleContext";
+import type { Locale } from "@/lib/i18n";
 
 type SortDir = "desc" | "asc";
 
@@ -18,9 +20,11 @@ function SortIcon({ dir }: { dir: SortDir }) {
   );
 }
 
-function formatListDate(iso: string | null) {
+const LOCALE_CODE: Record<Locale, string> = { en: "en-GB", sv: "sv-SE" };
+
+function formatListDate(iso: string | null, locale: Locale) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("sv-SE", {
+  return new Date(iso).toLocaleDateString(LOCALE_CODE[locale], {
     weekday: "short",
     day: "numeric",
     month: "long",
@@ -35,6 +39,7 @@ interface Props {
 
 export default function ProjectList({ projects, selectedProjectId, onSelect }: Props) {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const { t, locale } = useLocale();
 
   const sorted = [...projects].sort((a, b) => {
     const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -45,7 +50,7 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
   if (projects.length === 0) {
     return (
       <div className="flex h-full items-center justify-center px-6 py-12 text-center">
-        <p className="text-sm text-muted">No projects yet</p>
+        <p className="text-sm text-muted">{t("projects.noProjects")}</p>
       </div>
     );
   }
@@ -57,16 +62,16 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
         <button
           className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-muted-bg hover:text-foreground"
           onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-          aria-label={`Sort ${sortDir === "desc" ? "ascending" : "descending"}`}
+          aria-label={sortDir === "desc" ? t("projects.sortAscending") : t("projects.sortDescending")}
         >
           <SortIcon dir={sortDir} />
-          {sortDir === "desc" ? "Newest first" : "Oldest first"}
+          {sortDir === "desc" ? t("projects.newestFirst") : t("projects.oldestFirst")}
         </button>
       </div>
       <ul className="flex flex-col gap-2 p-2">
         {sorted.map((project) => {
         const isSelected = project.project_id === selectedProjectId;
-        const date = formatListDate(project.start_time);
+        const date = formatListDate(project.start_time, locale);
 
         return (
           <li key={project.project_id}>

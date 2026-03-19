@@ -8,6 +8,7 @@ import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
 import { getOrgMembers } from "@/lib/members";
 import type { OrganizationMember } from "@/lib/supabase";
+import { useLocale } from "@/context/LocaleContext";
 
 export default function CreateProjectForm() {
   const {
@@ -27,6 +28,7 @@ export default function CreateProjectForm() {
 
   const { closeDrawer } = useDrawer();
   const { activeOrg } = useOrg();
+  const { t } = useLocale();
 
   const [members, setMembers] = useState<OrganizationMember[]>([]);
 
@@ -64,7 +66,7 @@ export default function CreateProjectForm() {
       >
         <Input
           autoFocus
-          placeholder="Kundnamn"
+          placeholder={t("createProject.titlePlaceholder")}
           value={title}
           onValueChange={setTitle}
           isDisabled={isSaving}
@@ -72,7 +74,7 @@ export default function CreateProjectForm() {
         />
 
         <Textarea
-          placeholder="Enter project description"
+          placeholder={t("createProject.descriptionPlaceholder")}
           value={description}
           onValueChange={setDescription}
           isDisabled={isSaving}
@@ -101,7 +103,7 @@ export default function CreateProjectForm() {
                   clipRule="evenodd"
                 />
               </svg>
-              <span>Location selected</span>
+              <span>{t("createProject.locationSelected")}</span>
             </>
           ) : (
             <>
@@ -123,16 +125,16 @@ export default function CreateProjectForm() {
                   d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              <span>Click on the map to set a location</span>
+              <span>{t("createProject.clickToSetLocation")}</span>
             </>
           )}
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-foreground">Start time</span>
+          <span className="text-sm font-medium text-foreground">{t("createProject.startTime")}</span>
           <div className="flex gap-2">
             <DatePicker
-              aria-label="Date"
+              aria-label={t("createProject.dateAriaLabel")}
               variant="bordered"
               showMonthAndYearPickers
               granularity="day"
@@ -147,7 +149,7 @@ export default function CreateProjectForm() {
         <Select
           classNames={{ trigger: "min-h-10 py-2" }}
           isMultiline
-          label="Assignees"
+          label={t("createProject.assignees")}
           selectionMode="multiple"
           selectedKeys={new Set(assignees.filter((id) => memberIds.has(id)))}
           onSelectionChange={(keys) => {
@@ -157,7 +159,7 @@ export default function CreateProjectForm() {
           isDisabled={isSaving || members.length === 0}
           labelPlacement="outside"
           variant="bordered"
-          placeholder={members.length === 0 ? "No members found" : "Select assignees"}
+          placeholder={members.length === 0 ? t("createProject.noMembersFound") : t("createProject.selectAssignees")}
           renderValue={(items) => (
             <div className="flex flex-wrap gap-1">
               {items.map((item) => (
@@ -189,7 +191,7 @@ export default function CreateProjectForm() {
             isLoading={isSaving}
             fullWidth
           >
-            Create Project
+            {t("createProject.createButton")}
           </Button>
           <Button
             variant="light"
@@ -197,7 +199,7 @@ export default function CreateProjectForm() {
             isDisabled={isSaving}
             fullWidth
           >
-            Cancel
+            {t("createProject.cancel")}
           </Button>
         </div>
       </form>

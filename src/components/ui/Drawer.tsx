@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Button } from "@heroui/react";
 import { useDrawer } from "@/context/DrawerContext";
+import { useLocale } from "@/context/LocaleContext";
 
 export default function Drawer() {
   const { isOpen, content, contentKey, backdrop, title, closeDrawer } = useDrawer();
+  const { t } = useLocale();
   const pathname = usePathname();
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -84,7 +86,7 @@ export default function Drawer() {
             variant="light"
             size="sm"
             onPress={closeDrawer}
-            aria-label="Close"
+            aria-label={t("drawer.close")}
             className="text-muted"
           >
             <svg

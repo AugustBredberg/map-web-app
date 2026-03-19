@@ -8,6 +8,7 @@ import {
   STATUS_ICON_PATHS,
   STATUS_LABELS,
 } from "@/lib/projectStatus";
+import { useLocale } from "@/context/LocaleContext";
 export type { StatusMeta, ProjectStatus };
 export { STATUS_META, STATUS_ICON_PATHS, STATUS_LABELS };
 
@@ -43,7 +44,9 @@ export default function ProjectStatusBadge({
   className = "",
 }: Props) {
   const meta = STATUS_META[status];
-  const label = STATUS_LABELS[status];
+  const { t } = useLocale();
+  const label = t(`statusLabels.${status}`);
+  const description = t(`statusDescriptions.${status}`);
   const interactive = onClick !== undefined;
   // In display mode default to always selected; in interactive mode use the prop
   const active = isSelected ?? !interactive;
@@ -63,7 +66,7 @@ export default function ProjectStatusBadge({
         <p className={`text-sm font-semibold leading-tight ${active ? "text-foreground" : "text-muted"}`}>
           {label}
         </p>
-        <p className="truncate text-xs text-muted">{meta.description}</p>
+        <p className="truncate text-xs text-muted">{description}</p>
       </div>
     </>
   );

@@ -14,6 +14,7 @@ import { fetchProjects } from "@/lib/projects";
 import type { ProjectFetchFilters } from "@/lib/projects";
 import { getOrgMembers } from "@/lib/members";
 import type { Project, OrganizationMember } from "@/lib/supabase";
+import { useLocale } from "@/context/LocaleContext";
 
 function FilterIcon() {
   return (
@@ -43,15 +44,16 @@ export default function ProjectsPage() {
   const { openDrawer } = useDrawer();
   const { activeOrg } = useOrg();
   const { startCreating, cancelCreating } = useNewProject();
+  const { t } = useLocale();
 
   const handleNewProject = useCallback(() => {
     startCreating();
     openDrawer(<CreateProjectForm />, {
-      title: "New Project",
+      title: t("createProject.drawerTitle"),
       backdrop: false,
       onClose: cancelCreating,
     });
-  }, [openDrawer, startCreating, cancelCreating]);
+  }, [openDrawer, startCreating, cancelCreating, t]);
 
   const handleTimeFilterChange = useCallback((id: string | null) => {
     setActiveTimeFilter(id);
@@ -107,9 +109,9 @@ export default function ProjectsPage() {
         onStatusFiltersChange={handleStatusFiltersChange}
         onAssigneeFiltersChange={handleAssigneeFiltersChange}
       />,
-      { title: "Filters", backdrop: true },
+      { title: t("projects.filtersDrawerTitle"), backdrop: true },
     );
-  }, [openDrawer, members, activeTimeFilter, activeStatusFilters, activeAssigneeFilters, handleTimeFilterChange, handleStatusFiltersChange, handleAssigneeFiltersChange]);
+  }, [openDrawer, members, activeTimeFilter, activeStatusFilters, activeAssigneeFilters, handleTimeFilterChange, handleStatusFiltersChange, handleAssigneeFiltersChange, t]);
 
   return (
     <NavMenu>
@@ -129,7 +131,7 @@ export default function ProjectsPage() {
                   </svg>
                 }
               >
-                Nytt jobb
+            {t("projects.newJob")}
               </Button>
             </div>
             <ProjectFilters
@@ -161,7 +163,7 @@ export default function ProjectsPage() {
             >
               <FilterIcon />
             </Button>
-            <span className="text-sm font-semibold text-foreground">Projects</span>
+            <span className="text-sm font-semibold text-foreground">{t("projects.mobileHeader")}</span>
           </div>
           {/* List */}
           <div className="flex-1 overflow-y-auto">
@@ -193,8 +195,7 @@ export default function ProjectsPage() {
                 variant="flat"
                 size="sm"
                 onPress={() => setSelectedProject(null)}
-                aria-label="Back to list"
-              >
+                aria-label={t("projects.backToList")}>
                 <BackIcon />
               </Button>
               <span className="truncate text-sm font-semibold text-foreground">
@@ -207,7 +208,7 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="hidden md:flex flex-1 items-center justify-center text-sm text-muted">
-            Select a project to view details
+            {t("projects.selectProject")}
           </div>
         )}
       </div>

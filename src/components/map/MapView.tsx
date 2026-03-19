@@ -18,6 +18,7 @@ import { useLocationPicker } from "@/hooks/useLocationPicker";
 import CreateProjectForm from "@/components/project/CreateProjectForm";
 import ProjectDetailsPanel from "@/components/project/ProjectDetailsPanel";
 import ProjectFilters from "@/components/project/ProjectFilters";
+import { useLocale } from "@/context/LocaleContext";
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
 const MAP_STYLE_LIGHT = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
@@ -31,6 +32,7 @@ export default function MapView() {
 
   const { openDrawer, closeDrawer, isOpen: drawerOpen } = useDrawer();
   const { activeRole, activeOrg } = useOrg();
+  const { t } = useLocale();
   const mapReadyRef = useRef(false);
 
   // Filter state
@@ -54,9 +56,9 @@ export default function MapView() {
         onStatusFiltersChange={handleStatusFiltersChange}
         onAssigneeFiltersChange={handleAssigneeFiltersChange}
       />,
-      { title: "Filters", backdrop: true },
+      { title: t("projects.filtersDrawerTitle"), backdrop: true },
     );
-  }, [openDrawer, members, activeTimeFilter, activeStatusFilters, activeAssigneeFilters, handleTimeFilterChange, handleStatusFiltersChange, handleAssigneeFiltersChange]);
+  }, [openDrawer, members, activeTimeFilter, activeStatusFilters, activeAssigneeFilters, handleTimeFilterChange, handleStatusFiltersChange, handleAssigneeFiltersChange, t]);
   const openDrawerRef = useRef(openDrawer);
   useEffect(() => { openDrawerRef.current = openDrawer; }, [openDrawer]);
 
@@ -116,8 +118,8 @@ export default function MapView() {
 
   const handleAddClick = useCallback(() => {
     startCreating();
-    openDrawer(<CreateProjectForm />, { onClose: cancelCreating, backdrop: false, title: "New Project" });
-  }, [startCreating, openDrawer, cancelCreating]);
+    openDrawer(<CreateProjectForm />, { onClose: cancelCreating, backdrop: false, title: t("createProject.titlePlaceholder") });
+  }, [startCreating, openDrawer, cancelCreating, t]);
 
   // Map initialisation
   useEffect(() => {
@@ -228,7 +230,7 @@ export default function MapView() {
         variant="flat"
         size="sm"
         onPress={openFiltersDrawer}
-        aria-label="Toggle filters"
+        aria-label={t("map.toggleFilters")}
         className="absolute left-4 top-4 z-10 bg-white shadow-md text-gray-600 md:hidden"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -257,7 +259,7 @@ export default function MapView() {
           radius="full"
           size="lg"
           onPress={handleAddClick}
-          aria-label="Add map object"
+          aria-label={t("map.addMapObject")}
           className="absolute bottom-24 left-4 shadow-lg"
         >
           <svg
@@ -280,7 +282,7 @@ export default function MapView() {
       {/* Map hint — nudge the user to click the map when no location is set yet */}
       {isCreating && !pickedLocation && (
         <div className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 rounded-xl bg-gray-900/80 px-4 py-2.5 shadow-lg backdrop-blur-sm">
-          <span className="text-sm text-white">Tap the map to set a location</span>
+          <span className="text-sm text-white">{t("map.tapToSetLocation")}</span>
         </div>
       )}
     </div>

@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useOrg } from "@/context/OrgContext";
+import { useLocale } from "@/context/LocaleContext";
 
 const navItems = [
   {
-    label: "Map",
+    labelKey: "nav.map",
     href: "/map",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -16,7 +17,7 @@ const navItems = [
     ),
   },
   {
-    label: "Projects",
+    labelKey: "nav.projects",
     href: "/projects",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -25,7 +26,7 @@ const navItems = [
     ),
   },
   {
-    label: "Settings",
+    labelKey: "nav.settings",
     href: "/settings",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -55,6 +56,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
   });
   const { activeOrg } = useOrg();
   const pathname = usePathname();
+  const { t } = useLocale();
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -78,7 +80,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <div className="flex h-14 items-center justify-between px-3">
           {!collapsed && (
-            <span className="truncate text-lg font-semibold">Map Web App</span>
+            <span className="truncate text-lg font-semibold">{t("nav.appName")}</span>
           )}
         </div>
         <div className="mx-3 border-b-2 border-border" />
@@ -92,7 +94,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? t(item.labelKey) : undefined}
                     className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
                       isActive
                         ? "bg-sidebar-active text-white"
@@ -101,7 +103,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
                     aria-current={isActive ? "page" : undefined}
                   >
                     {item.icon}
-                    {!collapsed && <span>{item.label}</span>}
+                    {!collapsed && <span>{t(item.labelKey)}</span>}
                   </Link>
                 </li>
               );
@@ -118,7 +120,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
           )}
           <Link
             href={settingsItem.href}
-            title={collapsed ? settingsItem.label : undefined}
+            title={collapsed ? t(settingsItem.labelKey) : undefined}
             className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
               pathname.startsWith(settingsItem.href)
                 ? "bg-sidebar-active text-white"
@@ -127,15 +129,15 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
             aria-current={pathname.startsWith(settingsItem.href) ? "page" : undefined}
           >
             {settingsItem.icon}
-            {!collapsed && <span>{settingsItem.label}</span>}
+            {!collapsed && <span>{t(settingsItem.labelKey)}</span>}
           </Link>
           <button
             onClick={toggleCollapsed}
             className={`mt-1 flex w-full cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""}`}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
           >
             {collapsed ? expandIcon : collapseIcon}
-            {!collapsed && <span>Collapse</span>}
+            {!collapsed && <span>{t("nav.collapse")}</span>}
           </button>
         </div>
       </aside>
@@ -159,7 +161,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
                 >
                   <span className={`flex flex-col items-center gap-1 rounded-xl px-4 py-1 ${isActive ? "bg-sidebar-active text-white" : ""}`}>
                     {item.icon}
-                    <span>{item.label}</span>
+                    <span>{t(item.labelKey)}</span>
                   </span>
                 </Link>
               </li>

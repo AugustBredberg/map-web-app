@@ -8,6 +8,7 @@ import {
   ModalFooter,
   Button,
 } from "@heroui/react";
+import { useLocale } from "@/context/LocaleContext";
 
 interface Props {
   isOpen: boolean;
@@ -23,28 +24,32 @@ interface Props {
 
 export default function ConfirmDialog({
   isOpen,
-  title = "Are you sure?",
+  title,
   message,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   confirmColor = "danger",
   onConfirm,
   onCancel,
   isLoading = false,
 }: Props) {
+  const { t } = useLocale();
+  const resolvedTitle = title ?? t("confirmDialog.title");
+  const resolvedConfirmLabel = confirmLabel ?? t("confirmDialog.confirm");
+  const resolvedCancelLabel = cancelLabel ?? t("confirmDialog.cancel");
   return (
     <Modal isOpen={isOpen} onClose={onCancel} size="sm">
       <ModalContent>
-        <ModalHeader>{title}</ModalHeader>
+        <ModalHeader>{resolvedTitle}</ModalHeader>
         <ModalBody>
           <p className="text-sm text-gray-600">{message}</p>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onCancel} isDisabled={isLoading}>
-            {cancelLabel}
+            {resolvedCancelLabel}
           </Button>
           <Button color={confirmColor} onPress={onConfirm} isLoading={isLoading}>
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </ModalFooter>
       </ModalContent>

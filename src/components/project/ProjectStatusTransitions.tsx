@@ -3,10 +3,10 @@
 import { Button } from "@heroui/react";
 import {
   STATUS_TRANSITIONS,
-  STATUS_LABELS,
   type ProjectStatus,
   type StatusTransition,
 } from "@/lib/projectStatus";
+import { useLocale } from "@/context/LocaleContext";
 
 interface Props {
   currentStatus: ProjectStatus;
@@ -22,42 +22,43 @@ const COLOR_MAP: Record<StatusTransition["color"], "primary" | "success" | "warn
 };
 
 export default function ProjectStatusTransitions({ currentStatus, onTransition, isLoading = false }: Props) {
+  const { t } = useLocale();
   const transitions = STATUS_TRANSITIONS[currentStatus] ?? [];
 
   if (transitions.length === 0) return null;
 
-  const primary = transitions.filter((t) => t.primary);
-  const secondary = transitions.filter((t) => !t.primary);
+  const primary = transitions.filter((transition) => transition.primary);
+  const secondary = transitions.filter((transition) => !transition.primary);
 
   return (
     <div className="flex flex-col gap-2">
-      {primary.map((t) => (
+      {primary.map((transition) => (
         <Button
-          key={t.to}
-          color={COLOR_MAP[t.color]}
+          key={transition.to}
+          color={COLOR_MAP[transition.color]}
           size="lg"
           fullWidth
           isLoading={isLoading}
-          onPress={() => onTransition(t.to)}
+          onPress={() => onTransition(transition.to)}
           className="h-14 text-base font-semibold"
         >
-          {t.label}
+          {t(`statusTransitions.${transition.labelKey}`)}
           <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs font-normal">
-            {STATUS_LABELS[t.to]}
+            {t(`statusLabels.${transition.to}`)}
           </span>
         </Button>
       ))}
-      {secondary.map((t) => (
+      {secondary.map((transition) => (
         <Button
-          key={t.to}
-          color={COLOR_MAP[t.color]}
+          key={transition.to}
+          color={COLOR_MAP[transition.color]}
           variant="flat"
           size="md"
           fullWidth
           isLoading={isLoading}
-          onPress={() => onTransition(t.to)}
+          onPress={() => onTransition(transition.to)}
         >
-          {t.label}
+          {t(`statusTransitions.${transition.labelKey}`)}
         </Button>
       ))}
     </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button, Input } from "@heroui/react";
 import { createInvitation } from "@/lib/invitations";
+import { useLocale } from "@/context/LocaleContext";
 
 interface Props {
   organizationId: string;
@@ -15,6 +16,7 @@ export default function InviteMemberForm({ organizationId, invitedBy, onInvited 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const { t } = useLocale();
 
   const handleSubmit = async () => {
     if (!email.trim()) return;
@@ -40,7 +42,7 @@ export default function InviteMemberForm({ organizationId, invitedBy, onInvited 
       <div className="flex gap-2">
         <Input
           type="email"
-          placeholder="Email address"
+          placeholder={t("inviteMember.emailPlaceholder")}
           variant="bordered"
           autoComplete="off"
           data-bwignore="true"
@@ -60,11 +62,11 @@ export default function InviteMemberForm({ organizationId, invitedBy, onInvited 
           isDisabled={!email.trim()}
           onPress={handleSubmit}
         >
-          Invite
+          {t("inviteMember.invite")}
         </Button>
       </div>
       {error && <p className="text-xs text-danger">{error}</p>}
-      {success && <p className="text-xs text-success">Invitation sent.</p>}
+      {success && <p className="text-xs text-success">{t("inviteMember.invitationSent")}</p>}
     </div>
   );
 }

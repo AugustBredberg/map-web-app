@@ -20,11 +20,13 @@ import {
 import type { Invitation, InvitationWithOrg } from "@/lib/invitations";
 import InviteMemberForm from "@/components/settings/InviteMemberForm";
 import { createOrganization } from "@/lib/organizations";
+import { useLocale } from "@/context/LocaleContext";
 
 export default function SettingsPage() {
   const { organizations, activeOrg, activeRole, displayName, setActiveOrg, loading, refreshOrgs } = useOrg();
   const { session, systemRole } = useAuth();
   const router = useRouter();
+  const { locale, setLocale, t } = useLocale();
 
   const [orgInvitations, setOrgInvitations] = useState<Invitation[]>([]);
   const [myInvitations, setMyInvitations] = useState<InvitationWithOrg[]>([]);
@@ -130,36 +132,73 @@ export default function SettingsPage() {
   return (
     <div className="min-h-full bg-background">
       <div className="mx-auto w-full max-w-2xl px-6 py-10">
-        <h1 className="mb-8 text-2xl font-bold text-foreground">Settings</h1>
+        <h1 className="mb-8 text-2xl font-bold text-foreground">{t("settings.title")}</h1>
 
         <div className="flex flex-col gap-8">
 
           {/* Appearance */}
+          {/* Appearance */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Appearance</p>
-            <div className="flex items-center justify-between rounded-2xl bg-surface px-5 py-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted-bg text-foreground">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.appearance")}</p>
+            <div className="flex flex-col gap-3">
+              {/* Dark mode */}
+              <div className="flex items-center justify-between rounded-2xl bg-surface px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted-bg text-foreground">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{t("settings.darkMode")}</p>
+                    <p className="text-xs text-muted">{t("settings.darkModeDesc")}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Dark mode</p>
-                  <p className="text-xs text-muted">Stored in your browser</p>
+                <Switch
+                  isSelected={resolvedTheme === "dark"}
+                  onValueChange={(val) => setTheme(val ? "dark" : "light")}
+                  aria-label={t("settings.darkMode")}
+                />
+              </div>
+
+              {/* Language */}
+              <div className="flex items-center justify-between rounded-2xl bg-surface px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted-bg text-foreground">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{t("settings.language")}</p>
+                    <p className="text-xs text-muted">{t("settings.languageDesc")}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={locale === "en" ? "solid" : "flat"}
+                    color={locale === "en" ? "primary" : "default"}
+                    onPress={() => setLocale("en")}
+                  >
+                    English
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={locale === "sv" ? "solid" : "flat"}
+                    color={locale === "sv" ? "primary" : "default"}
+                    onPress={() => setLocale("sv")}
+                  >
+                    Svenska
+                  </Button>
                 </div>
               </div>
-              <Switch
-                isSelected={resolvedTheme === "dark"}
-                onValueChange={(val) => setTheme(val ? "dark" : "light")}
-                aria-label="Toggle dark mode"
-              />
             </div>
           </section>
 
           {/* Account */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Account</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.account")}</p>
             <div className="flex items-center gap-4 rounded-2xl bg-surface px-5 py-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -182,7 +221,7 @@ export default function SettingsPage() {
 
           {/* Organization selector */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Organization</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.organization")}</p>
             {loading ? (
               <div className="flex justify-center py-4">
                 <Spinner />
@@ -190,7 +229,7 @@ export default function SettingsPage() {
             ) : organizations.length === 0 ? (
               <div className="rounded-2xl p-4 bg-surface">
                 <p className="text-sm text-muted p-y-2">
-                  You are not a member of any organization. Contact your administrator to be added.
+                  {t("settings.noOrganization")}
                 </p>
               </div>
             ) : (
@@ -229,14 +268,14 @@ export default function SettingsPage() {
           {/* Admin: Members */}
           {!loading && activeOrg && hasMinRole(activeRole, "admin") && members.length > 0 && (
             <section>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Members</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.members")}</p>
               <div className="max-h-64 overflow-y-auto rounded-2xl bg-surface">
                 <ul>
                   {members.map((member) => (
                     <li key={member.user_id} className="flex items-center justify-between px-5 py-3">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-foreground">
-                          {member.display_name ?? "Unnamed member"}
+                          {member.display_name ?? t("settings.unnamedMember")}
                         </p>
                       </div>
                       <div style={{ width: "9rem", flexShrink: 0 }}>
@@ -252,8 +291,8 @@ export default function SettingsPage() {
                         isDisabled={updatingRoleId === member.user_id}
                         // classNames={{ trigger: "border-gray-200" }}
                       >
-                        <SelectItem key="member">Member</SelectItem>
-                        <SelectItem key="admin">Admin</SelectItem>
+                        <SelectItem key="member">{t("settings.memberRole")}</SelectItem>
+                        <SelectItem key="admin">{t("settings.adminRole")}</SelectItem>
                       </Select>
                       </div>
                     </li>
@@ -266,7 +305,7 @@ export default function SettingsPage() {
           {/* Admin: Invite Members */}
           {!loading && activeOrg && hasMinRole(activeRole, "admin") && (
             <section>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Invite Members</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.inviteMembers")}</p>
               <div className="flex flex-col gap-4">
                 <InviteMemberForm
                   organizationId={activeOrg.organization_id}
@@ -275,7 +314,7 @@ export default function SettingsPage() {
                 />
                 {orgInvitations.length > 0 && (
                   <div>
-                    <p className="mb-3 text-xs font-semibold text-muted">Pending invitations</p>
+                    <p className="mb-3 text-xs font-semibold text-muted">{t("settings.pendingInvitations")}</p>
                     <ul className="flex flex-col gap-2">
                       {orgInvitations.map((inv) => (
                         <li key={inv.id} className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
@@ -291,7 +330,7 @@ export default function SettingsPage() {
                             isDisabled={!!cancellingId}
                             onPress={() => handleCancelInvitation(inv.id)}
                           >
-                            Cancel
+                            {t("settings.cancel")}
                           </Button>
                         </li>
                       ))}
@@ -305,7 +344,7 @@ export default function SettingsPage() {
           {/* Pending invitations for the current user */}
           {myInvitations.length > 0 && (
             <section>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Pending Invitations</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.pendingInvitationsSection")}</p>
               <ul className="flex flex-col gap-3">
                 {myInvitations.map((inv) => (
                   <li
@@ -315,9 +354,9 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-semibold text-foreground">
-                          {inv.organizations?.name ?? "Unknown organization"}
+                          {inv.organizations?.name ?? t("settings.unknownOrganization")}
                         </p>
-                        <p className="text-xs text-muted">Invited to join as member</p>
+                        <p className="text-xs text-muted">{t("settings.invitedToJoin")}</p>
                       </div>
                       {expandedInviteId !== inv.id && (
                         <Button
@@ -330,7 +369,7 @@ export default function SettingsPage() {
                             setAcceptError(null);
                           }}
                         >
-                          Accept
+                          {t("settings.accept")}
                         </Button>
                       )}
                     </div>
@@ -340,7 +379,7 @@ export default function SettingsPage() {
                           autoFocus
                           autoComplete="off"
                           data-bwignore="true"
-                          placeholder="First and last name"
+                          placeholder={t("settings.firstAndLastName")}
                           variant="bordered"
                           size="sm"
                           value={draftName}
@@ -357,7 +396,7 @@ export default function SettingsPage() {
                             onPress={() => handleAcceptInvitation(inv)}
                             className="flex-1"
                           >
-                            Confirm
+                            {t("settings.confirm")}
                           </Button>
                           <Button
                             size="sm"
@@ -365,7 +404,7 @@ export default function SettingsPage() {
                             isDisabled={!!acceptingId}
                             onPress={() => { setExpandedInviteId(null); setAcceptError(null); }}
                           >
-                            Cancel
+                            {t("settings.cancel")}
                           </Button>
                         </div>
                       </div>
@@ -379,10 +418,10 @@ export default function SettingsPage() {
           {/* Dev: Create Organization */}
           {systemRole === "dev" && (
             <section>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Create Organization</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.createOrganization")}</p>
               <div className="flex flex-col gap-3">
                 <Input
-                  placeholder="Organization name"
+                  placeholder={t("settings.organizationNamePlaceholder")}
                   variant="bordered"
                   autoComplete="off"
                   data-bwignore="true"
@@ -401,7 +440,7 @@ export default function SettingsPage() {
                   onPress={handleCreateOrg}
                   fullWidth
                 >
-                  Create
+                  {t("settings.create")}
                 </Button>
               </div>
             </section>
@@ -409,7 +448,7 @@ export default function SettingsPage() {
 
           {/* Sign out */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Session</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.session")}</p>
             <Button
               color="danger"
               variant="flat"
@@ -417,7 +456,7 @@ export default function SettingsPage() {
               fullWidth
               className="rounded-2xl py-6 text-sm font-semibold"
             >
-              Sign out
+              {t("settings.signOut")}
             </Button>
           </section>
 

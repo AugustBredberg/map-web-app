@@ -1,34 +1,26 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Chip } from "@heroui/react";
 import type { OrganizationMember } from "@/lib/supabase";
 import { STATUS_LABELS, STATUS_ICON_PATHS } from "@/lib/projectStatus";
+import { useLocale } from "@/context/LocaleContext";
 
-const TIME_FILTERS = [
-  {
-    id: "today",
-    label: "Dagens jobb",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-    ),
-  },
-  {
-    id: "all",
-    label: "Alla jobb",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-];
+const TIME_FILTER_ICONS = {
+  today: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+  ),
+  all: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+} as const;
 
-const STATUS_FILTERS = Object.entries(STATUS_LABELS).map(([id, label]) => ({
+const STATUS_ICONS_FILTER = Object.entries(STATUS_LABELS).map(([id]) => ({
   id,
-  label,
   icon: (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
       <path strokeLinecap="round" strokeLinejoin="round" d={STATUS_ICON_PATHS[Number(id)]} />
@@ -70,6 +62,20 @@ export default function ProjectFilters({
   onStatusFiltersChange,
   onAssigneeFiltersChange,
 }: Props) {
+  const { t } = useLocale();
+
+  const TIME_FILTERS = useMemo(() => [
+    { id: "today", label: t("filters.todaysJobs"), icon: TIME_FILTER_ICONS.today },
+    { id: "all",   label: t("filters.allJobs"),   icon: TIME_FILTER_ICONS.all   },
+  ], [t]);
+
+  const STATUS_FILTERS = useMemo(() => STATUS_ICONS_FILTER.map(({ id, icon }) => ({
+    id,
+    label: t(`statusLabels.${id}`),
+    icon,
+  })), [t]);
+
+  const statusFilterCount = STATUS_ICONS_FILTER.length;
   const [timeOpen, setTimeOpen] = useState(true);
   const [statusOpen, setStatusOpen] = useState(true);
   const [peopleOpen, setPeopleOpen] = useState(true);
@@ -96,12 +102,12 @@ export default function ProjectFilters({
 
   const handleSelectAllStatuses = useCallback(() => {
     const next =
-      activeStatusFilters.size === STATUS_FILTERS.length
+      activeStatusFilters.size === statusFilterCount
         ? new Set<string>()
-        : new Set(STATUS_FILTERS.map((f) => f.id));
+        : new Set(STATUS_ICONS_FILTER.map((f) => f.id));
     setActiveStatusFilters(next);
     onStatusFiltersChange(next);
-  }, [activeStatusFilters, onStatusFiltersChange]);
+  }, [activeStatusFilters, onStatusFiltersChange, statusFilterCount]);
 
   const handleAssigneeFilter = useCallback((userId: string) => {
     const next = new Set(activeAssigneeFilters);
@@ -121,7 +127,7 @@ export default function ProjectFilters({
             onClick={() => setTimeOpen((v) => !v)}
           >
             <ChevronIcon open={timeOpen} />
-             Jobbfilter
+             {t("filters.jobFilter")}
           </button>
           {timeOpen && (
             <ul className="mt-0.5 ml-3">
@@ -154,13 +160,13 @@ export default function ProjectFilters({
               onClick={() => setStatusOpen((v) => !v)}
             >
               <ChevronIcon open={statusOpen} />
-              Status
+              {t("filters.status")}
             </button>
             <button
               className="cursor-pointer rounded-md px-2 py-1 text-xs text-muted hover:bg-muted-bg hover:text-foreground"
               onClick={handleSelectAllStatuses}
             >
-              {activeStatusFilters.size === STATUS_FILTERS.length ? "Clear" : "All"}
+              {activeStatusFilters.size === statusFilterCount ? t("filters.clear") : t("filters.all")}
             </button>
           </div>
           {statusOpen && (
@@ -193,11 +199,11 @@ export default function ProjectFilters({
             onClick={() => setPeopleOpen((v) => !v)}
           >
             <ChevronIcon open={peopleOpen} />
-            Personer
+            {t("filters.people")}
           </button>
           {peopleOpen && (
             members.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-muted">No members</p>
+              <p className="px-3 py-2 text-xs text-muted">{t("filters.noMembers")}</p>
             ) : (
               <div className="flex flex-wrap gap-1.5 px-2 py-1.5">
                 {members.map((m) => {

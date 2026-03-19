@@ -10,23 +10,26 @@ import ProjectStatusTransitions from "@/components/project/ProjectStatusTransiti
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import type { Project } from "@/lib/supabase";
 import type { ProjectStatus } from "@/lib/projectStatus";
+import { useLocale } from "@/context/LocaleContext";
+import type { Locale } from "@/lib/i18n";
 
 interface Props {
   project: Project;
   onProjectUpdated?: (updated: Project) => void;
 }
 
-function formatDate(iso: string | null) {
+function formatDate(iso: string | null, locale: Locale) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString(locale === "sv" ? "sv-SE" : "en-GB", { weekday: "short", month: "short", day: "numeric" });
 }
 
-function formatCreated(iso: string | null) {
+function formatCreated(iso: string | null, locale: Locale) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  return new Date(iso).toLocaleString(locale === "sv" ? "sv-SE" : "en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
 export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props) {
+  const { t, locale } = useLocale();
   const [assigneeData, setAssigneeData] = useState<{ id: string; name: string }[]>([]);
   const [currentStatus, setCurrentStatus] = useState<ProjectStatus>(
     (project.project_status ?? 0) as ProjectStatus,
@@ -50,12 +53,12 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
     const { data, error } = await updateProjectStatus(project.project_id, to);
     setIsTransitioning(false);
     if (error || !data) {
-      setTransitionError(error ?? "Failed to update status");
+      setTransitionError(error ?? t("projectDetails.failedToUpdateStatus"));
       return;
     }
     setCurrentStatus(to);
     onProjectUpdated?.(data);
-  }, [project.project_id, onProjectUpdated]);
+  }, [project.project_id, onProjectUpdated, t]);
 
   const handleCancel = useCallback(async () => {
     setIsCancelling(true);
@@ -63,14 +66,14 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
     setIsCancelling(false);
     setShowCancelConfirm(false);
     if (error || !data) {
-      setTransitionError(error ?? "Failed to cancel project");
+      setTransitionError(error ?? t("projectDetails.failedToCancelProject"));
       return;
     }
     setCurrentStatus(5);
     onProjectUpdated?.(data);
-  }, [project.project_id, onProjectUpdated]);
+  }, [project.project_id, onProjectUpdated, t]);
 
-  const startDate = formatDate(project.start_time);
+  const startDate = formatDate(project.start_time, locale);
   const isCancelled = currentStatus === 5;
 
   return (
@@ -100,15 +103,15 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
             <span className="font-semibold text-foreground">{startDate}</span>
           </div>
         ) : (
-          <p className="text-sm text-muted">No start time set</p>
+          <p className="text-sm text-muted">{t("projectDetails.noStartTime")}</p>
         )}
       </div>
 
       {/* Assignees */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Assigned to</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{t("projectDetails.assignedTo")}</p>
         {assigneeData.length === 0 ? (
-          <p className="text-sm text-muted">Unassigned</p>
+          <p className="text-sm text-muted">{t("projectDetails.unassigned")}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {assigneeData.map(({ id, name }) => (
@@ -121,7 +124,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
       {/* Description */}
       {project.description && (
         <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">Description</p>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">{t("projectDetails.description")}</p>
           <p className="text-sm leading-relaxed text-foreground">{project.description}</p>
         </div>
       )}
@@ -138,19 +141,19 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
             onPress={() => setShowCancelConfirm(true)}
             className="text-muted hover:text-red-500"
           >
-            Cancel job
+            {t("projectDetails.cancelJob")}
           </Button>
         </div>
       )}
 
       {/* Created — de-emphasised footnote */}
-      <p className="text-center text-xs text-muted">Created {formatCreated(project.created_at)}</p>
+      <p className="text-center text-xs text-muted">{t("projectDetails.created")} {formatCreated(project.created_at, locale)}</p>
 
       <ConfirmDialog
         isOpen={showCancelConfirm}
-        title="Cancel job"
-        message="Are you sure you want to cancel this job? You can reopen it later if needed."
-        confirmLabel="Yes, cancel job"
+        title={t("projectDetails.cancelJobTitle")}
+        message={t("projectDetails.cancelJobMessage")}
+        confirmLabel={t("projectDetails.cancelJobConfirm")}
         onConfirm={handleCancel}
         onCancel={() => setShowCancelConfirm(false)}
         isLoading={isCancelling}

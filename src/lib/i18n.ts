@@ -1,0 +1,338 @@
+/**
+ * Internationalization (i18n) — translation dictionaries and accessor.
+ * Supported locales: "en" (English) and "sv" (Swedish).
+ */
+
+export const translations = {
+  en: {
+    home: {
+      title: "Map Web App",
+      description:
+        "An interactive mapping platform. Upload and manage geographic objects on a live map view.",
+      openMap: "Open Map",
+    },
+    login: {
+      signIn: "Sign in",
+      createAccount: "Create account",
+      welcomeBack: "Welcome back to Map Web App.",
+      getStarted: "Get started with Map Web App.",
+      email: "Email",
+      emailPlaceholder: "you@example.com",
+      password: "Password",
+      passwordPlaceholder: "••••••••",
+      noAccount: "Don't have an account?",
+      signUp: "Sign up",
+      alreadyHaveAccount: "Already have an account?",
+      confirmEmailMessage:
+        "Check your email for a confirmation link, then sign in.",
+    },
+    nav: {
+      map: "Map",
+      projects: "Projects",
+      settings: "Settings",
+      appName: "Map Web App",
+      collapse: "Collapse",
+      expandSidebar: "Expand sidebar",
+      collapseSidebar: "Collapse sidebar",
+    },
+    map: {
+      loading: "Loading map\u2026",
+      tapToSetLocation: "Tap the map to set a location",
+      addMapObject: "Add map object",
+      toggleFilters: "Toggle filters",
+    },
+    projects: {
+      newJob: "New Project",
+      drawerTitle: "New Project",
+      filtersDrawerTitle: "Filters",
+      selectProject: "Select a project to view details",
+      mobileHeader: "Projects",
+      openFilters: "Open filters",
+      backToList: "Back to list",
+      noProjects: "No projects yet",
+      newestFirst: "Newest first",
+      oldestFirst: "Oldest first",
+      sortAscending: "Sort ascending",
+      sortDescending: "Sort descending",
+    },
+    createProject: {
+      titlePlaceholder: "Project name",
+      descriptionPlaceholder: "Enter project description",
+      locationSelected: "Location selected",
+      clickToSetLocation: "Click on the map to set a location",
+      startTime: "Start time",
+      dateAriaLabel: "Date",
+      assignees: "Assignees",
+      noMembersFound: "No members found",
+      selectAssignees: "Select assignees",
+      createButton: "Create Project",
+      cancel: "Cancel",
+    },
+    projectDetails: {
+      noStartTime: "No start time set",
+      assignedTo: "Assigned to",
+      unassigned: "Unassigned",
+      description: "Description",
+      cancelJob: "Cancel job",
+      created: "Created",
+      cancelJobTitle: "Cancel job",
+      cancelJobMessage:
+        "Are you sure you want to cancel this job? You can reopen it later if needed.",
+      cancelJobConfirm: "Yes, cancel job",
+      failedToUpdateStatus: "Failed to update status",
+      failedToCancelProject: "Failed to cancel project",
+    },
+    filters: {
+      jobFilter: "Job filter",
+      todaysJobs: "Today's jobs",
+      allJobs: "All jobs",
+      status: "Status",
+      people: "People",
+      noMembers: "No members",
+      clear: "Clear",
+      all: "All",
+    },
+    settings: {
+      title: "Settings",
+      appearance: "Appearance",
+      darkMode: "Dark mode",
+      darkModeDesc: "Stored in your browser",
+      account: "Account",
+      organization: "Organization",
+      noOrganization:
+        "You are not a member of any organization. Contact your administrator to be added.",
+      members: "Members",
+      unnamedMember: "Unnamed member",
+      memberRole: "Member",
+      adminRole: "Admin",
+      inviteMembers: "Invite Members",
+      pendingInvitationsSection: "Pending Invitations",
+      pendingInvitations: "Pending invitations",
+      invitedToJoin: "Invited to join as member",
+      accept: "Accept",
+      firstAndLastName: "First and last name",
+      confirm: "Confirm",
+      cancel: "Cancel",
+      createOrganization: "Create Organization",
+      organizationNamePlaceholder: "Organization name",
+      create: "Create",
+      session: "Session",
+      signOut: "Sign out",
+      unknownOrganization: "Unknown organization",
+      language: "Language",
+      languageDesc: "Choose display language",
+    },
+    inviteMember: {
+      emailPlaceholder: "Email address",
+      invite: "Invite",
+      invitationSent: "Invitation sent.",
+    },
+    drawer: {
+      close: "Close",
+    },
+    confirmDialog: {
+      title: "Are you sure?",
+      confirm: "Confirm",
+      cancel: "Cancel",
+    },
+    statusLabels: {
+      0: "New",
+      1: "Customer Visit",
+      2: "Ongoing",
+      3: "Blocked",
+      4: "Done",
+      5: "Cancelled",
+    },
+    statusDescriptions: {
+      0: "New job",
+      1: "Customer visit",
+      2: "Work ongoing",
+      3: "Work blocked",
+      4: "Job is done",
+      5: "Job was cancelled",
+    },
+    statusTransitions: {
+      startCustomerVisit: "Start Customer Visit",
+      startWork: "Start Work",
+      completeJob: "Complete Job",
+      reportBlockage: "Report Blockage",
+      resumeWork: "Resume Work",
+      reopenJob: "Reopen Job",
+    },
+  },
+  sv: {
+    home: {
+      title: "Kartapp",
+      description:
+        "En interaktiv kartplattform. Ladda upp och hantera geografiska objekt p\u00e5 en livekarta.",
+      openMap: "\u00d6ppna karta",
+    },
+    login: {
+      signIn: "Logga in",
+      createAccount: "Skapa konto",
+      welcomeBack: "V\u00e4lkommen tillbaka till Kartapp.",
+      getStarted: "Kom ig\u00e5ng med Kartapp.",
+      email: "E-post",
+      emailPlaceholder: "du@exempel.se",
+      password: "L\u00f6senord",
+      passwordPlaceholder: "••••••••",
+      noAccount: "Har du inget konto?",
+      signUp: "Registrera dig",
+      alreadyHaveAccount: "Har du redan ett konto?",
+      confirmEmailMessage:
+        "Kolla din e-post f\u00f6r en bekr\u00e4ftelsel\u00e4nk och logga sedan in.",
+    },
+    nav: {
+      map: "Karta",
+      projects: "Projekt",
+      settings: "Inst\u00e4llningar",
+      appName: "Kartapp",
+      collapse: "F\u00e4ll ihop",
+      expandSidebar: "Expandera sidof\u00e4lt",
+      collapseSidebar: "F\u00e4ll ihop sidof\u00e4lt",
+    },
+    map: {
+      loading: "Laddar karta\u2026",
+      tapToSetLocation: "Tryck p\u00e5 kartan f\u00f6r att s\u00e4tta en plats",
+      addMapObject: "L\u00e4gg till kartobjekt",
+      toggleFilters: "V\u00e4xla filter",
+    },
+    projects: {
+      newJob: "Nytt jobb",
+      drawerTitle: "Nytt projekt",
+      filtersDrawerTitle: "Filter",
+      selectProject: "V\u00e4lj ett projekt f\u00f6r att se detaljer",
+      mobileHeader: "Projekt",
+      openFilters: "\u00d6ppna filter",
+      backToList: "Tillbaka till listan",
+      noProjects: "Inga projekt \u00e4nnu",
+      newestFirst: "Nyast f\u00f6rst",
+      oldestFirst: "\u00c4ldst f\u00f6rst",
+      sortAscending: "Sortera stigande",
+      sortDescending: "Sortera fallande",
+    },
+    createProject: {
+      titlePlaceholder: "Kundnamn",
+      descriptionPlaceholder: "Ange projektbeskrivning",
+      locationSelected: "Plats vald",
+      clickToSetLocation: "Klicka p\u00e5 kartan f\u00f6r att s\u00e4tta en plats",
+      startTime: "Starttid",
+      dateAriaLabel: "Datum",
+      assignees: "Tilldelade",
+      noMembersFound: "Inga medlemmar hittades",
+      selectAssignees: "V\u00e4lj tilldelade",
+      createButton: "Skapa projekt",
+      cancel: "Avbryt",
+    },
+    projectDetails: {
+      noStartTime: "Ingen starttid angiven",
+      assignedTo: "Tilldelad till",
+      unassigned: "Ej tilldelad",
+      description: "Beskrivning",
+      cancelJob: "Avbryt jobb",
+      created: "Skapad",
+      cancelJobTitle: "Avbryt jobb",
+      cancelJobMessage:
+        "\u00c4r du s\u00e4ker p\u00e5 att du vill avbryta det h\u00e4r jobbet? Du kan \u00f6ppna det igen senare om det beh\u00f6vs.",
+      cancelJobConfirm: "Ja, avbryt jobb",
+      failedToUpdateStatus: "Kunde inte uppdatera status",
+      failedToCancelProject: "Kunde inte avbryta projektet",
+    },
+    filters: {
+      jobFilter: "Jobbfilter",
+      todaysJobs: "Dagens jobb",
+      allJobs: "Alla jobb",
+      status: "Status",
+      people: "Personer",
+      noMembers: "Inga medlemmar",
+      clear: "Rensa",
+      all: "Alla",
+    },
+    settings: {
+      title: "Inst\u00e4llningar",
+      appearance: "Utseende",
+      darkMode: "M\u00f6rkt l\u00e4ge",
+      darkModeDesc: "Lagras i din webbl\u00e4sare",
+      account: "Konto",
+      organization: "Organisation",
+      noOrganization:
+        "Du \u00e4r inte medlem i n\u00e5gon organisation. Kontakta din administrat\u00f6r f\u00f6r att l\u00e4ggas till.",
+      members: "Medlemmar",
+      unnamedMember: "Naml\u00f6s medlem",
+      memberRole: "Medlem",
+      adminRole: "Admin",
+      inviteMembers: "Bjud in medlemmar",
+      pendingInvitationsSection: "V\u00e4ntande inbjudningar",
+      pendingInvitations: "V\u00e4ntande inbjudningar",
+      invitedToJoin: "Inbjuden att g\u00e5 med som medlem",
+      accept: "Acceptera",
+      firstAndLastName: "F\u00f6r- och efternamn",
+      confirm: "Bekr\u00e4fta",
+      cancel: "Avbryt",
+      createOrganization: "Skapa organisation",
+      organizationNamePlaceholder: "Organisationsnamn",
+      create: "Skapa",
+      session: "Session",
+      signOut: "Logga ut",
+      unknownOrganization: "Ok\u00e4nd organisation",
+      language: "Spr\u00e5k",
+      languageDesc: "V\u00e4lj visningsspr\u00e5k",
+    },
+    inviteMember: {
+      emailPlaceholder: "E-postadress",
+      invite: "Bjud in",
+      invitationSent: "Inbjudan skickad.",
+    },
+    drawer: {
+      close: "St\u00e4ng",
+    },
+    confirmDialog: {
+      title: "\u00c4r du s\u00e4ker?",
+      confirm: "Bekr\u00e4fta",
+      cancel: "Avbryt",
+    },
+    statusLabels: {
+      0: "Nytt",
+      1: "Kundbest\u00f6k",
+      2: "P\u00e5g\u00e5ende",
+      3: "Blockerat",
+      4: "Klart",
+      5: "Avbrutet",
+    },
+    statusDescriptions: {
+      0: "Nytt jobb",
+      1: "Kundbest\u00f6k",
+      2: "Arbete p\u00e5g\u00e5r",
+      3: "Arbete blockerat",
+      4: "Jobbet \u00e4r klart",
+      5: "Jobbet avbr\u00f6ts",
+    },
+    statusTransitions: {
+      startCustomerVisit: "Starta kundbest\u00f6k",
+      startWork: "Starta arbete",
+      completeJob: "Slutf\u00f6r jobb",
+      reportBlockage: "Rapportera blockering",
+      resumeWork: "\u00c5teruppta arbete",
+      reopenJob: "\u00d6ppna igen",
+    },
+  },
+} as const;
+
+export type Locale = keyof typeof translations;
+
+/**
+ * Returns a `t(key)` function for the given locale.
+ * Keys use dot-notation, e.g. `"settings.signOut"`.
+ */
+export function createT(locale: Locale): (key: string) => string {
+  const dict = translations[locale] as unknown as Record<string, unknown>;
+  return function t(key: string): string {
+    const parts = key.split(".");
+    let val: unknown = dict;
+    for (const p of parts) {
+      if (typeof val !== "object" || val === null) return key;
+      val = (val as Record<string, unknown>)[p];
+    }
+    return typeof val === "string" ? val : key;
+  };
+}

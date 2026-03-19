@@ -6,6 +6,7 @@ import { OrgProvider } from "@/context/OrgContext";
 import { DrawerProvider } from "@/context/DrawerContext";
 import { NewProjectProvider } from "@/context/NewProjectContext";
 import Drawer from "@/components/ui/Drawer";
+import { LocaleProvider } from "@/context/LocaleContext";
 
 export const metadata: Metadata = {
   title: "Map Web App",
@@ -21,16 +22,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
         <Providers>
-          <AuthProvider>
-          <OrgProvider>
-            <DrawerProvider>
-              <NewProjectProvider>
-                {children}
-                <Drawer />
-              </NewProjectProvider>
-            </DrawerProvider>
-          </OrgProvider>
-        </AuthProvider>
+          <LocaleProvider>
+            <AuthProvider>
+              <OrgProvider>
+                <DrawerProvider>
+                  <NewProjectProvider>
+                    {children}
+                    <Drawer />
+                  </NewProjectProvider>
+                </DrawerProvider>
+              </OrgProvider>
+            </AuthProvider>
+          </LocaleProvider>
         </Providers>
       </body>
     </html>
