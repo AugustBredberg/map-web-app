@@ -32,12 +32,12 @@ Kanske att vi ska ändra statusarna till:
 */
 
 export const STATUS_META: Record<number, StatusMeta> = {
-  0: { description: "New job",            iconColor: "text-slate-600",  border: "border-slate-400",  bg: "bg-slate-50"  },
-  1: { description: "Customer visit",      iconColor: "text-violet-500", border: "border-violet-400", bg: "bg-violet-50" },
-  2: { description: "Work ongoing",         iconColor: "text-blue-500",   border: "border-blue-400",   bg: "bg-blue-50"   },
-  3: { description: "Work blocked",         iconColor: "text-amber-500",  border: "border-amber-400",  bg: "bg-amber-50"  },
-  4: { description: "Job is done",          iconColor: "text-green-500",  border: "border-green-400",  bg: "bg-green-50"  },
-  5: { description: "Job was cancelled",    iconColor: "text-red-600",    border: "border-red-400",    bg: "bg-red-50"    },
+  0: { description: "New job",            iconColor: "text-slate-600 dark:text-slate-400",  border: "border-slate-400 dark:border-slate-600",  bg: "bg-slate-50 dark:bg-slate-800/50"  },
+  1: { description: "Customer visit",     iconColor: "text-violet-500 dark:text-violet-400", border: "border-violet-400 dark:border-violet-600", bg: "bg-violet-50 dark:bg-violet-900/30" },
+  2: { description: "Work ongoing",       iconColor: "text-blue-500 dark:text-blue-400",     border: "border-blue-400 dark:border-blue-600",     bg: "bg-blue-50 dark:bg-blue-900/30"   },
+  3: { description: "Work blocked",       iconColor: "text-amber-500 dark:text-amber-400",   border: "border-amber-400 dark:border-amber-600",   bg: "bg-amber-50 dark:bg-amber-900/30"  },
+  4: { description: "Job is done",        iconColor: "text-green-500 dark:text-green-400",   border: "border-green-400 dark:border-green-600",   bg: "bg-green-50 dark:bg-green-900/30"  },
+  5: { description: "Job was cancelled",  iconColor: "text-red-600 dark:text-red-400",       border: "border-red-400 dark:border-red-600",       bg: "bg-red-50 dark:bg-red-900/30"    },
 };
 
 /** Solid hex colours used for map pin rendering (matches STATUS_META iconColor). */
