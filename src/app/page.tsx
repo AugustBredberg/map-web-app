@@ -11,7 +11,7 @@ export default function Home() {
         </p>
         <Link
           href="/map"
-          className="rounded-full bg-blue-600 px-8 py-3 text-base font-semibold transition-colors hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          className="cursor-pointer rounded-full bg-blue-600 px-8 py-3 text-base font-semibold transition-colors hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           Open Map
         </Link>

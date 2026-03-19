@@ -51,19 +51,19 @@ export default function ProjectStatusBadge({
   const base = "flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-colors";
   const stateClasses = active
     ? `${meta.border} ${meta.bg}`
-    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50";
+    : "border-border bg-surface hover:border-border hover:bg-muted-bg";
   const disabledClasses = isDisabled ? "cursor-not-allowed opacity-50" : interactive ? "cursor-pointer" : "";
 
   const content = (
     <>
-      <span className={active ? meta.iconColor : "text-gray-400"}>
+      <span className={active ? meta.iconColor : "text-muted"}>
         {STATUS_ICONS[status]}
       </span>
       <div className="min-w-0">
-        <p className={`text-sm font-semibold leading-tight ${active ? "text-gray-900" : "text-gray-600"}`}>
+        <p className={`text-sm font-semibold leading-tight ${active ? "text-foreground" : "text-muted"}`}>
           {label}
         </p>
-        <p className="truncate text-xs text-gray-400">{meta.description}</p>
+        <p className="truncate text-xs text-muted">{meta.description}</p>
       </div>
     </>
   );

@@ -74,7 +74,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
   const isCancelled = currentStatus === 5;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 max-w-xl mx-auto">
 
       {/* Status badge */}
       <ProjectStatusBadge status={currentStatus} />
@@ -91,24 +91,24 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
       )}
 
       {/* Schedule */}
-      <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex flex-col gap-1.5">
+      <div className="rounded-xl border-border border-2 bg-surface px-4 py-3 flex flex-col gap-1.5">
         {startDate ? (
           <div className="flex items-center gap-2 text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span className="font-semibold text-gray-800">{startDate}</span>
+            <span className="font-semibold text-foreground">{startDate}</span>
           </div>
         ) : (
-          <p className="text-sm text-gray-400">No start time set</p>
+          <p className="text-sm text-muted">No start time set</p>
         )}
       </div>
 
       {/* Assignees */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Assigned to</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Assigned to</p>
         {assigneeData.length === 0 ? (
-          <p className="text-sm text-gray-400">Unassigned</p>
+          <p className="text-sm text-muted">Unassigned</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {assigneeData.map(({ id, name }) => (
@@ -121,14 +121,14 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
       {/* Description */}
       {project.description && (
         <div>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-gray-400">Description</p>
-          <p className="text-sm leading-relaxed text-gray-700">{project.description}</p>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted">Description</p>
+          <p className="text-sm leading-relaxed text-foreground">{project.description}</p>
         </div>
       )}
 
       {/* Cancel — low-prominence, always visible unless already cancelled */}
       {!isCancelled && (
-        <div className="pt-2 border-t border-gray-100">
+        <div className="pt-2">
           <Button
             variant="light"
             color="danger"
@@ -136,7 +136,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
             fullWidth
             isDisabled={isTransitioning || isCancelling}
             onPress={() => setShowCancelConfirm(true)}
-            className="text-gray-400 hover:text-red-500"
+            className="text-muted hover:text-red-500"
           >
             Cancel job
           </Button>
@@ -144,7 +144,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
       )}
 
       {/* Created — de-emphasised footnote */}
-      <p className="text-center text-xs text-gray-300">Created {formatCreated(project.created_at)}</p>
+      <p className="text-center text-xs text-muted">Created {formatCreated(project.created_at)}</p>
 
       <ConfirmDialog
         isOpen={showCancelConfirm}

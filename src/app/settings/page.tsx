@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Button, Input, Select, SelectItem, Spinner } from "@heroui/react";
+import { Button, Input, Select, SelectItem, Spinner, Switch } from "@heroui/react";
+import { useTheme } from "next-themes";
 import { useOrg } from "@/context/OrgContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -40,6 +41,7 @@ export default function SettingsPage() {
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
   const [membersKey, setMembersKey] = useState(0);
+  const { resolvedTheme, setTheme } = useTheme();
 
   const refreshOrgInvitations = useCallback(() => setOrgInvitesKey((k) => k + 1), []);
 
@@ -126,25 +128,48 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-full bg-gray-50">
+    <div className="min-h-full bg-background">
       <div className="mx-auto w-full max-w-2xl px-6 py-10">
-        <h1 className="mb-8 text-2xl font-bold text-gray-900">Settings</h1>
+        <h1 className="mb-8 text-2xl font-bold text-foreground">Settings</h1>
 
         <div className="flex flex-col gap-8">
 
+          {/* Appearance */}
+          <section>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Appearance</p>
+            <div className="flex items-center justify-between rounded-2xl bg-surface px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted-bg text-foreground">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Dark mode</p>
+                  <p className="text-xs text-muted">Stored in your browser</p>
+                </div>
+              </div>
+              <Switch
+                isSelected={resolvedTheme === "dark"}
+                onValueChange={(val) => setTheme(val ? "dark" : "light")}
+                aria-label="Toggle dark mode"
+              />
+            </div>
+          </section>
+
           {/* Account */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Account</p>
-            <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Account</p>
+            <div className="flex items-center gap-4 rounded-2xl bg-surface px-5 py-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-gray-900">{displayName ?? session?.user.email}</p>
+                <p className="truncate text-sm font-semibold text-foreground">{displayName ?? session?.user.email}</p>
                 {displayName && (
-                  <p className="truncate text-sm text-gray-500">{session?.user.email}</p>
+                  <p className="truncate text-sm text-muted">{session?.user.email}</p>
                 )}
               </div>
               {activeRole && (
@@ -157,14 +182,14 @@ export default function SettingsPage() {
 
           {/* Organization selector */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Organization</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Organization</p>
             {loading ? (
               <div className="flex justify-center py-4">
                 <Spinner />
               </div>
             ) : organizations.length === 0 ? (
-              <div className="rounded-2xl border border-gray-200 p-4 bg-white  shadow-sm">
-                <p className="text-sm text-gray-500 p-y-2">
+              <div className="rounded-2xl p-4 bg-surface">
+                <p className="text-sm text-muted p-y-2">
                   You are not a member of any organization. Contact your administrator to be added.
                 </p>
               </div>
@@ -176,14 +201,14 @@ export default function SettingsPage() {
                     <li key={org.organization_id}>
                       <button
                         onClick={() => handleSelect(org)}
-                        className={`flex w-full items-center justify-between rounded-2xl border px-5 py-4 text-left shadow-sm transition-colors ${
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-2xl px-5 py-4 text-left shadow-sm transition-colors ${
                           isActive
-                            ? "border-primary/40 bg-primary/5 text-gray-900"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+                            ? " border border-primary/40 bg-primary/5 text-foreground"
+                            : "bg-surface text-foreground hover:bg-muted-bg"
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${isActive ? "bg-primary/15 text-primary" : "bg-gray-100 text-gray-500"}`}>
+                          <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${isActive ? "bg-primary/15 text-primary" : "bg-muted-bg text-muted"}`}>
                             {org.name.charAt(0).toUpperCase()}
                           </div>
                           <span className="text-sm font-medium">{org.name}</span>
@@ -204,13 +229,13 @@ export default function SettingsPage() {
           {/* Admin: Members */}
           {!loading && activeOrg && hasMinRole(activeRole, "admin") && members.length > 0 && (
             <section>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Members</p>
-              <div className="max-h-64 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <ul className="divide-y divide-gray-100">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Members</p>
+              <div className="max-h-64 overflow-y-auto rounded-2xl bg-surface">
+                <ul>
                   {members.map((member) => (
                     <li key={member.user_id} className="flex items-center justify-between px-5 py-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-gray-900">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {member.display_name ?? "Unnamed member"}
                         </p>
                       </div>
@@ -225,7 +250,7 @@ export default function SettingsPage() {
                           if (role && role !== member.role) handleRoleChange(member.user_id, role);
                         }}
                         isDisabled={updatingRoleId === member.user_id}
-                        classNames={{ trigger: "border-gray-200" }}
+                        // classNames={{ trigger: "border-gray-200" }}
                       >
                         <SelectItem key="member">Member</SelectItem>
                         <SelectItem key="admin">Admin</SelectItem>
@@ -241,7 +266,7 @@ export default function SettingsPage() {
           {/* Admin: Invite Members */}
           {!loading && activeOrg && hasMinRole(activeRole, "admin") && (
             <section>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Invite Members</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Invite Members</p>
               <div className="flex flex-col gap-4">
                 <InviteMemberForm
                   organizationId={activeOrg.organization_id}
@@ -250,13 +275,13 @@ export default function SettingsPage() {
                 />
                 {orgInvitations.length > 0 && (
                   <div>
-                    <p className="mb-3 text-xs font-semibold text-gray-400">Pending invitations</p>
+                    <p className="mb-3 text-xs font-semibold text-muted">Pending invitations</p>
                     <ul className="flex flex-col gap-2">
                       {orgInvitations.map((inv) => (
-                        <li key={inv.id} className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                        <li key={inv.id} className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
                           <div className="flex items-center gap-2">
                             <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                            <span className="text-sm text-gray-600">{inv.invitee_email}</span>
+                            <span className="text-sm text-muted">{inv.invitee_email}</span>
                           </div>
                           <Button
                             size="sm"
@@ -280,19 +305,19 @@ export default function SettingsPage() {
           {/* Pending invitations for the current user */}
           {myInvitations.length > 0 && (
             <section>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Pending Invitations</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Pending Invitations</p>
               <ul className="flex flex-col gap-3">
                 {myInvitations.map((inv) => (
                   <li
                     key={inv.id}
-                    className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm"
+                    className="flex flex-col gap-3 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-foreground">
                           {inv.organizations?.name ?? "Unknown organization"}
                         </p>
-                        <p className="text-xs text-gray-500">Invited to join as member</p>
+                        <p className="text-xs text-muted">Invited to join as member</p>
                       </div>
                       {expandedInviteId !== inv.id && (
                         <Button
@@ -354,7 +379,7 @@ export default function SettingsPage() {
           {/* Dev: Create Organization */}
           {systemRole === "dev" && (
             <section>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Create Organization</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Create Organization</p>
               <div className="flex flex-col gap-3">
                 <Input
                   placeholder="Organization name"
@@ -384,7 +409,7 @@ export default function SettingsPage() {
 
           {/* Sign out */}
           <section>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Session</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Session</p>
             <Button
               color="danger"
               variant="flat"

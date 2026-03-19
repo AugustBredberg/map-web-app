@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import { useTheme } from "next-themes";
 import { Button } from "@heroui/react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -19,11 +20,14 @@ import ProjectDetailsPanel from "@/components/project/ProjectDetailsPanel";
 import ProjectFilters from "@/components/project/ProjectFilters";
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
-const MAP_STYLE = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
+const MAP_STYLE_LIGHT = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
+const MAP_STYLE_DARK = `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}`;
 
 export default function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const { resolvedTheme } = useTheme();
+  const themeInitialized = useRef(false);
 
   const { openDrawer, closeDrawer, isOpen: drawerOpen } = useDrawer();
   const { activeRole, activeOrg } = useOrg();
@@ -121,7 +125,7 @@ export default function MapView() {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: MAP_STYLE,
+      style: resolvedTheme === "dark" ? MAP_STYLE_DARK : MAP_STYLE_LIGHT,
       center: [11.9746, 57.7089],
       zoom: 10,
     });
@@ -152,6 +156,17 @@ export default function MapView() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Switch map style when the theme changes
+  useEffect(() => {
+    if (!themeInitialized.current) {
+      themeInitialized.current = true;
+      return;
+    }
+    const map = mapRef.current;
+    if (!map) return;
+    map.setStyle(resolvedTheme === "dark" ? MAP_STYLE_DARK : MAP_STYLE_LIGHT);
+  }, [resolvedTheme]);
 
   // Reload projects whenever the active org or filters change
   useEffect(() => {
@@ -222,7 +237,7 @@ export default function MapView() {
       </Button>
 
       {/* Desktop filter panel — always visible */}
-      <div className="absolute left-4 top-4 z-10 hidden w-52 rounded-xl border border-gray-200 bg-white shadow-xl overflow-y-auto max-h-[calc(100vh-8rem)] md:block">
+      <div className="absolute left-4 top-4 z-10 hidden w-52 rounded-xl bg-surface shadow-xl overflow-y-auto max-h-[calc(100vh-8rem)] md:block">
         <ProjectFilters
           members={members}
           defaultTimeFilter={activeTimeFilter}

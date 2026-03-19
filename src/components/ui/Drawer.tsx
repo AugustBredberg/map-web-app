@@ -61,13 +61,13 @@ export default function Drawer() {
           // Base positioning – mobile: full-width bottom sheet
           "fixed bottom-0 left-0 right-0 z-50",
           // Mobile sizing – flex column so header stays fixed and content scrolls
-          "flex flex-col max-h-[60vh]",
+          "flex flex-col h-[60vh]",
           // Desktop overrides – full-height right panel
           "md:left-auto md:bottom-auto md:top-0 md:right-0 md:h-full md:max-h-none md:w-96",
           // Shape
           "rounded-t-2xl md:rounded-t-none md:rounded-l-2xl",
           // Background & shadow
-          "bg-white shadow-2xl",
+          "bg-surface shadow-2xl",
           // Smooth slide animation
           "transform transition-transform duration-300 ease-in-out",
           // Position state
@@ -77,15 +77,15 @@ export default function Drawer() {
         ].join(" ")}
       >
         {/* Header */}
-        <div className="z-10 flex shrink-0 items-center justify-between border-b border-gray-100 bg-white/95 px-4 py-3 backdrop-blur-sm">
-          {title && <span className="text-base font-semibold text-gray-900">{title}</span>}
+        <div className="z-10 flex shrink-0 items-center justify-between bg-surface/95 px-4 py-3 backdrop-blur-sm">
+          {title && <span className="text-base font-semibold text-foreground">{title}</span>}
           <Button
             isIconOnly
             variant="light"
             size="sm"
             onPress={closeDrawer}
             aria-label="Close"
-            className="text-gray-400"
+            className="text-muted"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

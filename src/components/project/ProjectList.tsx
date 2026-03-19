@@ -45,7 +45,7 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
   if (projects.length === 0) {
     return (
       <div className="flex h-full items-center justify-center px-6 py-12 text-center">
-        <p className="text-sm text-gray-400">No projects yet</p>
+        <p className="text-sm text-muted">No projects yet</p>
       </div>
     );
   }
@@ -53,9 +53,9 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
   return (
     <div className="flex flex-col">
       {/* Sort bar */}
-      <div className="flex items-center justify-end border-b border-gray-100 px-3 py-1.5">
+      <div className="flex items-center justify-end px-3 py-1.5">
         <button
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-muted-bg hover:text-foreground"
           onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
           aria-label={`Sort ${sortDir === "desc" ? "ascending" : "descending"}`}
         >
@@ -63,7 +63,7 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
           {sortDir === "desc" ? "Newest first" : "Oldest first"}
         </button>
       </div>
-      <ul className="divide-y divide-gray-100">
+      <ul className="flex flex-col gap-2 p-2">
         {sorted.map((project) => {
         const isSelected = project.project_id === selectedProjectId;
         const date = formatListDate(project.start_time);
@@ -71,21 +71,19 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
         return (
           <li key={project.project_id}>
             <button
-              className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors ${
-                isSelected ? "bg-blue-50" : "hover:bg-gray-50"
+              className={`flex w-full cursor-pointer items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors ${
+                isSelected ? "bg-selected" : "bg-surface hover:bg-selected/60"
               }`}
               onClick={() => onSelect(project)}
             >
               <div className="min-w-0 flex-1">
                 <p
-                  className={`truncate text-sm font-semibold ${
-                    isSelected ? "text-blue-700" : "text-gray-900"
-                  }`}
+                  className={`truncate text-sm font-semibold text-foreground`}
                 >
                   {project.title}
                 </p>
                 {project.description && (
-                  <p className="mt-0.5 truncate text-xs text-gray-500">
+                  <p className="mt-0.5 truncate text-xs text-muted">
                     {project.description}
                   </p>
                 )}
@@ -96,7 +94,7 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
                   style={{ backgroundColor: STATUS_SOLID_COLORS[project.project_status ?? -1] ?? "#d1d5db" }}
                 />
                 {date && (
-                  <span className="text-xs text-gray-400">{date}</span>
+                  <span className="text-xs text-muted">{date}</span>
                 )}
               </div>
             </button>

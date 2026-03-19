@@ -71,16 +71,17 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen w-screen flex-col md:flex-row">
       {/* Desktop sidebar */}
       <aside
-        className={`hidden md:flex md:flex-col md:bg-gray-900 md:text-white transition-all duration-200 ${
+        className={`hidden md:flex md:flex-col bg-sidebar-bg text-sidebar-fg transition-all duration-200 ${
           collapsed ? "md:w-14" : "md:w-56"
         }`}
       >
         {/* Header */}
-        <div className="flex h-14 items-center justify-between border-b border-gray-700 px-3">
+        <div className="flex h-14 items-center justify-between px-3">
           {!collapsed && (
             <span className="truncate text-lg font-semibold">Map Web App</span>
           )}
         </div>
+        <div className="mx-3 border-b-2 border-border" />
 
         {/* Nav links */}
         <nav className="flex-1 px-2 py-4">
@@ -92,10 +93,10 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
                   <Link
                     href={item.href}
                     title={collapsed ? item.label : undefined}
-                    className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
+                    className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
                       isActive
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-100 hover:bg-gray-700"
+                        ? "bg-sidebar-active text-white"
+                        : "text-sidebar-fg hover:bg-sidebar-hover"
                     }`}
                     aria-current={isActive ? "page" : undefined}
                   >
@@ -109,19 +110,19 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-gray-700 px-2 py-3">
+        <div className="px-2 py-3">
           {!collapsed && activeOrg && (
-            <p className="mb-2 truncate px-2 text-xs text-gray-400">
+            <p className="mb-2 truncate px-2 text-xs text-sidebar-muted">
               {activeOrg.name}
             </p>
           )}
           <Link
             href={settingsItem.href}
             title={collapsed ? settingsItem.label : undefined}
-            className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
+            className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
               pathname.startsWith(settingsItem.href)
-                ? "bg-blue-600 text-white"
-                : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                ? "bg-sidebar-active text-white"
+                : "text-sidebar-fg/70 hover:bg-sidebar-hover hover:text-sidebar-fg"
             }`}
             aria-current={pathname.startsWith(settingsItem.href) ? "page" : undefined}
           >
@@ -130,7 +131,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
           </Link>
           <button
             onClick={toggleCollapsed}
-            className={`mt-1 flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""}`}
+            className={`mt-1 flex w-full cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""}`}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? expandIcon : collapseIcon}
@@ -143,7 +144,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Mobile bottom tab bar */}
-      <nav className="shrink-0 border-t border-gray-700 bg-gray-900 md:hidden">
+      <nav className="shrink-0 bg-sidebar-bg md:hidden">
         <ul className="flex items-center justify-around">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -151,15 +152,15 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
               <li key={item.href} className="flex-1">
                 <Link
                   href={item.href}
-                  className={`flex flex-col items-center gap-1 border-t-2 py-2 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
-                    isActive
-                      ? "border-blue-600 text-white"
-                      : "border-transparent text-gray-500 hover:text-gray-300"
+                  className={`flex flex-col items-center py-2 text-xs font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
+                    isActive ? "text-sidebar-fg" : "text-sidebar-muted hover:text-sidebar-fg"
                   }`}
                   aria-current={isActive ? "page" : undefined}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  <span className={`flex flex-col items-center gap-1 rounded-xl px-4 py-1 ${isActive ? "bg-sidebar-active text-white" : ""}`}>
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </span>
                 </Link>
               </li>
             );

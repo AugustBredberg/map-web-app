@@ -3,20 +3,110 @@
 @source "../../node_modules/@heroui/theme/dist";
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================
+   Theme tokens — light (default)
+   ============================================================ */
 :root {
+  /* Page surfaces */
   --background: #ffffff;
-  --foreground: #171717;
+  --surface: #F4F4F4;
+
+  /* Typography */
+  --foreground: #353535;
+  --muted: #6b7280;
+  --muted-bg: #f3f4f6;
+
+  /* Borders */
+  --border: #989898;
+
+  /* Selection highlight */
+  --selected: #e3e3e3;
+
+  /* Sidebar */
+  --sidebar-bg: #F4F4F4;
+  --sidebar-fg: #111827;
+  --sidebar-muted: #6b7280;
+  --sidebar-active: #2563eb;
+  --sidebar-hover: #e3e3e3;
+
+  /* Brand */
+  --primary: #2563eb;
+  --primary-fg: #ffffff;
+  --secondary: #7c3aed;
+  --secondary-fg: #ffffff;
+
+  /* Font */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* ============================================================
+   Theme tokens — dark
+   ============================================================ */
+.dark {
+  /* Page surfaces */
+  --background: #0f1117;
+  --surface: #1a1d27;
+
+  /* Typography */
+  --foreground: #f1f5f9;
+  --muted: #94a3b8;
+  --muted-bg: #1e2130;
+
+  /* Borders */
+  --border: #2d3147;
+
+  /* Selection highlight */
+  --selected: #2d3147;
+
+  /* Sidebar */
+  --sidebar-bg: #1a1d27;
+  --sidebar-fg: #f1f5f9;
+  --sidebar-muted: #64748b;
+  --sidebar-active: #2563eb;
+  --sidebar-hover: #161924;
+}
+
+/* ============================================================
+   Tailwind v4 design token registration
+   ============================================================ */
 @theme inline {
+  /* Page */
   --color-background: var(--background);
+  --color-surface: var(--surface);
+
+  /* Typography */
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-bg);
+
+  /* Borders */
+  --color-border: var(--border);
+
+  /* Selection highlight */
+  --color-selected: var(--selected);
+
+  /* Sidebar */
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-hover: var(--sidebar-hover);
+
+  /* Brand */
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-secondary: var(--secondary);
+  --color-secondary-fg: var(--secondary-fg);
+
+  /* Font */
+  --font-family-sans: var(--font-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Dim existing project markers while a new project is being created */

@@ -24,15 +24,6 @@ const TIME_FILTERS = [
       </svg>
     ),
   },
-//   {
-//     id: "completed",
-//     label: "Avslutade",
-//     icon: (
-//       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-//         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-//       </svg>
-//     ),
-//   },
 ];
 
 const STATUS_FILTERS = Object.entries(STATUS_LABELS).map(([id, label]) => ({
@@ -49,7 +40,7 @@ function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+      className={`h-3.5 w-3.5 shrink-0 text-muted transition-transform duration-200 ${open ? "rotate-90" : ""}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -126,25 +117,25 @@ export default function ProjectFilters({
         {/* Tid & Idag */}
         <div>
           <button
-            className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:bg-gray-100"
+            className="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted hover:bg-muted-bg"
             onClick={() => setTimeOpen((v) => !v)}
           >
             <ChevronIcon open={timeOpen} />
              Jobbfilter
           </button>
           {timeOpen && (
-            <ul className="mt-0.5">
+            <ul className="mt-0.5 ml-3">
               {TIME_FILTERS.map(({ id, label, icon }) => (
                 <li key={id}>
                   <button
-                    className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
                       activeTimeFilter === id
-                        ? "bg-blue-50 font-medium text-blue-700"
-                        : "text-gray-700 hover:bg-gray-100"
+                        ? "bg-selected font-medium text-foreground"
+                        : "text-foreground hover:bg-muted-bg"
                     }`}
                     onClick={() => handleTimeFilter(id)}
                   >
-                    <span className={activeTimeFilter === id ? "text-blue-500" : "text-gray-400"}>
+                    <span className={activeTimeFilter === id ? "text-foreground" : "text-muted"}>
                       {icon}
                     </span>
                     {label}
@@ -159,32 +150,32 @@ export default function ProjectFilters({
         {activeTimeFilter === "all" && <div>
           <div className="flex items-center">
             <button
-              className="flex flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:bg-gray-100"
+              className="flex flex-1 cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted hover:bg-muted-bg"
               onClick={() => setStatusOpen((v) => !v)}
             >
               <ChevronIcon open={statusOpen} />
               Status
             </button>
             <button
-              className="rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              className="cursor-pointer rounded-md px-2 py-1 text-xs text-muted hover:bg-muted-bg hover:text-foreground"
               onClick={handleSelectAllStatuses}
             >
               {activeStatusFilters.size === STATUS_FILTERS.length ? "Clear" : "All"}
             </button>
           </div>
           {statusOpen && (
-            <ul className="mt-0.5">
+            <ul className="mt-0.5 ml-3">
               {STATUS_FILTERS.map(({ id, label, icon }) => (
                 <li key={id}>
                   <button
-                    className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
                       activeStatusFilters.has(id)
-                        ? "bg-blue-50 font-medium text-blue-700"
-                        : "text-gray-700 hover:bg-gray-100"
+                        ? "bg-selected font-medium text-foreground"
+                        : "text-foreground hover:bg-muted-bg"
                     }`}
                     onClick={() => handleStatusFilter(id)}
                   >
-                    <span className={activeStatusFilters.has(id) ? "text-blue-500" : "text-gray-400"}>
+                    <span className={activeStatusFilters.has(id) ? "text-foreground" : "text-muted"}>
                       {icon}
                     </span>
                     {label}
@@ -198,7 +189,7 @@ export default function ProjectFilters({
         {/* Personer */}
         <div>
           <button
-            className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:bg-gray-100"
+            className="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted hover:bg-muted-bg"
             onClick={() => setPeopleOpen((v) => !v)}
           >
             <ChevronIcon open={peopleOpen} />
@@ -206,7 +197,7 @@ export default function ProjectFilters({
           </button>
           {peopleOpen && (
             members.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-gray-400">No members</p>
+              <p className="px-3 py-2 text-xs text-muted">No members</p>
             ) : (
               <div className="flex flex-wrap gap-1.5 px-2 py-1.5">
                 {members.map((m) => {
