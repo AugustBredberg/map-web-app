@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Button, Chip } from "@heroui/react";
+import { Button } from "@heroui/react";
+import PersonChip from "@/components/project/PersonChip";
 
 import { getProjectAssignees } from "@/lib/members";
 import { updateProjectStatus } from "@/lib/projects";
@@ -115,7 +116,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
         ) : (
           <div className="flex flex-wrap gap-2">
             {assigneeData.map(({ id, name }) => (
-              <Chip key={id} size="md" color="primary" variant="faded">{name}</Chip>
+              <PersonChip key={id} name={name} />
             ))}
           </div>
         )}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { Chip } from "@heroui/react";
 import type { OrganizationMember } from "@/lib/supabase";
+import PersonChip from "@/components/project/PersonChip";
 import { STATUS_LABELS, STATUS_ICON_PATHS } from "@/lib/projectStatus";
 import { useLocale } from "@/context/LocaleContext";
 
@@ -206,21 +206,15 @@ export default function ProjectFilters({
               <p className="px-3 py-2 text-xs text-muted">{t("filters.noMembers")}</p>
             ) : (
               <div className="flex flex-wrap gap-1.5 px-2 py-1.5">
-                {members.map((m) => {
-                  const selected = activeAssigneeFilters.has(m.user_id);
-                  return (
-                    <Chip
-                      key={m.user_id}
-                      size="sm"
-                      variant={selected ? "flat" : "bordered"}
-                      color={selected ? "primary" : "default"}
-                      className="cursor-pointer select-none"
-                      onClick={() => handleAssigneeFilter(m.user_id)}
-                    >
-                      {m.display_name ?? m.user_id}
-                    </Chip>
-                  );
-                })}
+                {members.map((m) => (
+                  <PersonChip
+                    key={m.user_id}
+                    name={m.display_name ?? m.user_id}
+                    size="sm"
+                    selected={activeAssigneeFilters.has(m.user_id)}
+                    onClick={() => handleAssigneeFilter(m.user_id)}
+                  />
+                ))}
               </div>
             )
           )}
