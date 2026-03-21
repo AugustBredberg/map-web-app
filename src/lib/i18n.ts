@@ -82,6 +82,14 @@ export const translations = {
       failedToUpdateStatus: "Failed to update status",
       failedToCancelProject: "Failed to cancel project",
     },
+    hoursLog: {
+      title: "Log Worked Hours",
+      weekLabel: "Week",
+      previousWeek: "Previous week",
+      nextWeek: "Next week",
+      saveWeek: "Save week",
+      saveError: "Failed to save hours",
+    },
     filters: {
       jobFilter: "Job filter",
       todaysJobs: "Today's jobs",
@@ -237,6 +245,14 @@ export const translations = {
       cancelJobConfirm: "Ja, avbryt jobb",
       failedToUpdateStatus: "Kunde inte uppdatera status",
       failedToCancelProject: "Kunde inte avbryta projektet",
+    },
+    hoursLog: {
+      title: "Logga arbetade timmar",
+      weekLabel: "Vecka",
+      previousWeek: "F\u00f6reg\u00e5ende vecka",
+      nextWeek: "N\u00e4sta vecka",
+      saveWeek: "Spara vecka",
+      saveError: "Misslyckades att spara timmar",
     },
     filters: {
       jobFilter: "Jobbfilter",

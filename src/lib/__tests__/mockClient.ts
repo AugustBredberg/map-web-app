@@ -3,9 +3,11 @@ import type { DbClient } from "@/lib/supabase";
 
 /**
  * Build a minimal mock Supabase client that supports chaining:
- *   .from(table).select(...).eq(...).in(...).single()
+ *   .from(table).select(...).eq(...).in(...).gte(...).lte(...).single()
+ *   .from(table).select(...).eq(...).maybeSingle()
  *   .from(table).insert(...).select(...).single()
  *   .from(table).update(...).eq(...).select(...).single()
+ *   .from(table).upsert(...).select(...).single()
  *   .from(table).delete().eq(...)
  *
  * Usage:
@@ -28,10 +30,14 @@ function createChain(response: () => MockResponse) {
   chain.select = vi.fn().mockImplementation(self);
   chain.insert = vi.fn().mockImplementation(self);
   chain.update = vi.fn().mockImplementation(self);
+  chain.upsert = vi.fn().mockImplementation(self);
   chain.delete = vi.fn().mockImplementation(self);
   chain.eq = vi.fn().mockImplementation(self);
   chain.in = vi.fn().mockImplementation(self);
+  chain.gte = vi.fn().mockImplementation(self);
+  chain.lte = vi.fn().mockImplementation(self);
   chain.single = vi.fn().mockImplementation(() => Promise.resolve(response()));
+  chain.maybeSingle = vi.fn().mockImplementation(() => Promise.resolve(response()));
 
   // When awaited directly (no .single()), resolve the response
   chain.then = (resolve: (v: MockResponse) => void) => Promise.resolve(response()).then(resolve);

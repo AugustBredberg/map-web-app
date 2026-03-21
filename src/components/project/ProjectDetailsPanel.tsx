@@ -6,6 +6,8 @@ import PersonChip from "@/components/project/PersonChip";
 
 import { getProjectAssignees } from "@/lib/members";
 import { updateProjectStatus } from "@/lib/projects";
+import ProjectAssigneeHoursLog from "@/components/project/ProjectAssigneeHoursLog";
+import { useAuth } from "@/context/AuthContext";
 import ProjectStatusBadge from "@/components/project/ProjectStatusBadge";
 import ProjectStatusTransitions from "@/components/project/ProjectStatusTransitions";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -31,7 +33,11 @@ function formatCreated(iso: string | null, locale: Locale) {
 
 export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props) {
   const { t, locale } = useLocale();
-  const [assigneeData, setAssigneeData] = useState<{ id: string; name: string }[]>([]);
+  const { session } = useAuth();
+  const [assigneeState, setAssigneeState] = useState<{
+    projectId: string;
+    data: { id: string; name: string }[];
+  } | null>(null);
   const [currentStatus, setCurrentStatus] = useState<ProjectStatus>(
     (project.project_status ?? 0) as ProjectStatus,
   );
@@ -43,10 +49,16 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
   useEffect(() => {
     let cancelled = false;
     getProjectAssignees(project.project_id).then(({ data }) => {
-      if (!cancelled && data) setAssigneeData(data);
+      if (!cancelled) {
+        setAssigneeState({ projectId: project.project_id, data: data ?? [] });
+      }
     });
     return () => { cancelled = true; };
   }, [project.project_id]);
+
+  // Loading until we have a response for the current project
+  const assigneesLoading = assigneeState?.projectId !== project.project_id;
+  const assigneeData = assigneesLoading ? [] : (assigneeState?.data ?? []);
 
   const handleTransition = useCallback(async (to: ProjectStatus) => {
     setIsTransitioning(true);
@@ -76,6 +88,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
 
   const startDate = formatDate(project.start_time, locale);
   const isCancelled = currentStatus === 5;
+  const isAssignee = !!session && assigneeData.some((a) => a.id === session.user.id);
 
   return (
     <div className="flex flex-col gap-5 max-w-xl mx-auto">
@@ -108,10 +121,40 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
         )}
       </div>
 
+      {/* Log worked hours */}
+      {assigneesLoading ? (
+        <div className="rounded-xl border-border border-2 bg-surface px-4 py-3 flex flex-col gap-3 animate-pulse">
+          <div className="h-3 w-32 rounded bg-muted-bg" />
+          <div className="flex justify-between items-center">
+            <div className="h-4 w-4 rounded bg-muted-bg" />
+            <div className="h-4 w-24 rounded bg-muted-bg" />
+            <div className="h-4 w-4 rounded bg-muted-bg" />
+          </div>
+          <div className="grid grid-cols-7 gap-1.5">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="h-14 rounded-lg bg-muted-bg" />
+            ))}
+          </div>
+          <div className="h-8 rounded-lg bg-muted-bg" />
+        </div>
+      ) : isAssignee && session ? (
+        <ProjectAssigneeHoursLog
+          projectId={project.project_id}
+          userId={session.user.id}
+          startTime={project.start_time}
+        />
+      ) : null}
+
       {/* Assignees */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{t("projectDetails.assignedTo")}</p>
-        {assigneeData.length === 0 ? (
+        {assigneesLoading ? (
+          <div className="flex flex-wrap gap-2 animate-pulse">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="h-7 w-20 rounded-full bg-muted-bg" />
+            ))}
+          </div>
+        ) : assigneeData.length === 0 ? (
           <p className="text-sm text-muted">{t("projectDetails.unassigned")}</p>
         ) : (
           <div className="flex flex-wrap gap-2">

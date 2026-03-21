@@ -47,6 +47,16 @@ export type OrganizationMember = {
   display_name: string | null;
 };
 
+export type TimeLogEntry = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  date: string; // ISO date string (YYYY-MM-DD)
+  hours: number;
+  created_at: string;
+  updated_at: string;
+};
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 // Support both the legacy anon key and the newer publishable default key
 const supabaseAnonKey =
