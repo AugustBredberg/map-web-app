@@ -48,17 +48,22 @@ export async function getProjectAssignees(
 ): Promise<{ data: AssigneeWithName[] | null; error: string | null }> {
   const { data: assigneeRows, error: assigneeError } = await client
     .from("project_assignees")
-    .select("user_id")
+    .select("user_id, organization_id")
     .eq("project_id", projectId);
 
   if (assigneeError) return { data: null, error: assigneeError.message };
   if (!assigneeRows || assigneeRows.length === 0) return { data: [], error: null };
 
   const userIds = assigneeRows.map((r) => r.user_id as string);
+  // All assignees belong to the same org; use the first row's org_id to
+  // constrain the member lookup and avoid picking up display names from
+  // a different organization for users who belong to multiple orgs.
+  const organizationId = assigneeRows[0].organization_id as string;
 
   const { data: memberRows, error: memberError } = await client
     .from("organization_members")
     .select("user_id, display_name")
+    .eq("organization_id", organizationId)
     .in("user_id", userIds);
 
   if (memberError) return { data: null, error: memberError.message };

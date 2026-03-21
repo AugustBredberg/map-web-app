@@ -27,7 +27,7 @@ describe("getOrgMembers", () => {
 describe("getProjectAssignees", () => {
   it("returns assignees with display names", async () => {
     const client = mockClientSequence([
-      { data: [{ user_id: "u1" }, { user_id: "u2" }], error: null },
+      { data: [{ user_id: "u1", organization_id: "org1" }, { user_id: "u2", organization_id: "org1" }], error: null },
       { data: [{ user_id: "u1", display_name: "Alice" }, { user_id: "u2", display_name: null }], error: null },
     ]);
 
@@ -51,5 +51,20 @@ describe("getProjectAssignees", () => {
     const { data, error } = await getProjectAssignees("p1", client);
     expect(data).toBeNull();
     expect(error).toBe("timeout");
+  });
+
+  it("filters organization_members by the project's organization_id", async () => {
+    // Regression: users in multiple orgs must only get their display name from
+    // the org the project belongs to, not a different org they also belong to.
+    const client = mockClientSequence([
+      { data: [{ user_id: "u1", organization_id: "org1" }], error: null },
+      { data: [{ user_id: "u1", display_name: "Alice (org1)" }], error: null },
+    ]);
+
+    const { data } = await getProjectAssignees("p1", client);
+
+    // Verify the second query was scoped to the correct org
+    expect(client.from).toHaveBeenCalledTimes(2);
+    expect(data).toEqual([{ id: "u1", name: "Alice (org1)" }]);
   });
 });
