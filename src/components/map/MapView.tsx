@@ -82,7 +82,7 @@ export default function MapView() {
         markers.applySelection();
       }
     }} />, {
-      title: project.title,
+      title: t("projectDetails.title"),
       backdrop: false,
       onClose: () => {
         markers.selectedProjectIdRef.current = null;

@@ -10,7 +10,7 @@ import { signOut } from "@/lib/auth";
 import type { Organization } from "@/lib/supabase";
 import { hasMinRole } from "@/lib/supabase";
 import type { Role, OrganizationMember } from "@/lib/supabase";
-import { getOrgMembers, updateMemberRole } from "@/lib/members";
+import { getOrgMembers, updateMemberRole, updateMemberHourlyRate } from "@/lib/members";
 import {
   getOrgInvitations,
   cancelInvitation,
@@ -42,6 +42,8 @@ export default function SettingsPage() {
   const [createOrgError, setCreateOrgError] = useState<string | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
+  const [updatingRateId, setUpdatingRateId] = useState<string | null>(null);
+  const [draftRates, setDraftRates] = useState<Record<string, string>>({});
   const [membersKey, setMembersKey] = useState(0);
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -60,7 +62,13 @@ export default function SettingsPage() {
     if (!activeOrg || !hasMinRole(activeRole, "admin")) return;
     const doFetch = async () => {
       const { data } = await getOrgMembers(activeOrg.organization_id);
-      setMembers(data ?? []);
+      const fetched = data ?? [];
+      setMembers(fetched);
+      setDraftRates(
+        Object.fromEntries(
+          fetched.map((m) => [m.user_id, m.hourly_rate != null ? String(m.hourly_rate) : ""])
+        )
+      );
     };
     void doFetch();
   }, [activeOrg, activeRole, membersKey]);
@@ -70,6 +78,19 @@ export default function SettingsPage() {
     setUpdatingRoleId(userId);
     await updateMemberRole(activeOrg.organization_id, userId, role);
     setUpdatingRoleId(null);
+    setMembersKey((k) => k + 1);
+  };
+
+  const handleRateBlur = async (userId: string) => {
+    if (!activeOrg) return;
+    const raw = (draftRates[userId] ?? "").trim();
+    const newRate = raw === "" ? null : parseFloat(raw);
+    if (newRate !== null && isNaN(newRate)) return;
+    const member = members.find((m) => m.user_id === userId);
+    if (!member || newRate === member.hourly_rate) return;
+    setUpdatingRateId(userId);
+    await updateMemberHourlyRate(activeOrg.organization_id, userId, newRate);
+    setUpdatingRateId(null);
     setMembersKey((k) => k + 1);
   };
 
@@ -278,22 +299,38 @@ export default function SettingsPage() {
                           {member.display_name ?? t("settings.unnamedMember")}
                         </p>
                       </div>
-                      <div style={{ width: "9rem", flexShrink: 0 }}>
-                      <Select
-                        aria-label="Role"
-                        size="sm"
-                        variant="bordered"
-                        selectedKeys={new Set([member.role ?? "member"])}
-                        onSelectionChange={(keys) => {
-                          const role = Array.from(keys)[0] as Role;
-                          if (role && role !== member.role) handleRoleChange(member.user_id, role);
-                        }}
-                        isDisabled={updatingRoleId === member.user_id}
-                        // classNames={{ trigger: "border-gray-200" }}
-                      >
-                        <SelectItem key="member">{t("settings.memberRole")}</SelectItem>
-                        <SelectItem key="admin">{t("settings.adminRole")}</SelectItem>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <div style={{ width: "7rem", flexShrink: 0 }}>
+                          <Input
+                            type="number"
+                            size="sm"
+                            variant="bordered"
+                            placeholder={t("settings.hourlyRate")}
+                            value={draftRates[member.user_id] ?? ""}
+                            onValueChange={(val) =>
+                              setDraftRates((prev) => ({ ...prev, [member.user_id]: val }))
+                            }
+                            onBlur={() => handleRateBlur(member.user_id)}
+                            isDisabled={updatingRateId === member.user_id}
+                          />
+                        </div>
+                        <div style={{ width: "9rem", flexShrink: 0 }}>
+                        <Select
+                          aria-label="Role"
+                          size="sm"
+                          variant="bordered"
+                          selectedKeys={new Set([member.role ?? "member"])}
+                          onSelectionChange={(keys) => {
+                            const role = Array.from(keys)[0] as Role;
+                            if (role && role !== member.role) handleRoleChange(member.user_id, role);
+                          }}
+                          isDisabled={updatingRoleId === member.user_id}
+                          // classNames={{ trigger: "border-gray-200" }}
+                        >
+                          <SelectItem key="member">{t("settings.memberRole")}</SelectItem>
+                          <SelectItem key="admin">{t("settings.adminRole")}</SelectItem>
+                        </Select>
+                        </div>
                       </div>
                     </li>
                   ))}

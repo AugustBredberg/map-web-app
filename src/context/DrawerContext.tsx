@@ -25,6 +25,7 @@ interface DrawerContextValue {
   title: string | null;
   openDrawer: (content: ReactNode, options?: DrawerOptions) => void;
   closeDrawer: () => void;
+  updateTitle: (title: string) => void;
 }
 
 const DrawerContext = createContext<DrawerContextValue>({
@@ -35,6 +36,7 @@ const DrawerContext = createContext<DrawerContextValue>({
   title: null,
   openDrawer: () => {},
   closeDrawer: () => {},
+  updateTitle: () => {},
 });
 
 export function DrawerProvider({ children }: { children: ReactNode }) {
@@ -62,8 +64,10 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setContent(null), 300);
   }, []);
 
+  const updateTitle = useCallback((newTitle: string) => setTitle(newTitle), []);
+
   return (
-    <DrawerContext.Provider value={{ isOpen, content, contentKey, backdrop, title, openDrawer, closeDrawer }}>
+    <DrawerContext.Provider value={{ isOpen, content, contentKey, backdrop, title, openDrawer, closeDrawer, updateTitle }}>
       {children}
     </DrawerContext.Provider>
   );

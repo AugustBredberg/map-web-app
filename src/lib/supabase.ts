@@ -45,6 +45,7 @@ export type OrganizationMember = {
   role: Role | null;
   created_at: string;
   display_name: string | null;
+  hourly_rate: number | null;
 };
 
 export type TimeLogEntry = {

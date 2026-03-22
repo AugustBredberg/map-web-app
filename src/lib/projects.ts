@@ -98,6 +98,30 @@ export async function createProject(
 }
 
 // ---------------------------------------------------------------------------
+// Update fields
+// ---------------------------------------------------------------------------
+
+export interface UpdateProjectInput {
+  title?: string;
+  description?: string | null;
+  start_time?: string | null;
+}
+
+export async function updateProject(
+  projectId: string,
+  input: UpdateProjectInput,
+  client: DbClient = supabase,
+): Promise<{ data: Project | null; error: string | null }> {
+  const { data, error } = await client
+    .from("projects")
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq("project_id", projectId)
+    .select(PROJECT_FIELDS)
+    .single();
+  return { data: data as Project | null, error: error?.message ?? null };
+}
+
+// ---------------------------------------------------------------------------
 // Update status
 // ---------------------------------------------------------------------------
 

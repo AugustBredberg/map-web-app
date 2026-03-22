@@ -13,7 +13,7 @@ export async function getOrgMembers(
 ): Promise<{ data: OrganizationMember[] | null; error: string | null }> {
   const { data, error } = await client
     .from("organization_members")
-    .select("user_id, display_name, role")
+    .select("user_id, display_name, role, hourly_rate")
     .eq("organization_id", organizationId);
 
   return { data: data as OrganizationMember[] | null, error: error?.message ?? null };
@@ -28,6 +28,20 @@ export async function updateMemberRole(
   const { error } = await client
     .from("organization_members")
     .update({ role })
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId);
+  return { error: error?.message ?? null };
+}
+
+export async function updateMemberHourlyRate(
+  organizationId: string,
+  userId: string,
+  hourlyRate: number | null,
+  client: DbClient = supabase,
+): Promise<{ error: string | null }> {
+  const { error } = await client
+    .from("organization_members")
+    .update({ hourly_rate: hourlyRate })
     .eq("organization_id", organizationId)
     .eq("user_id", userId);
   return { error: error?.message ?? null };
@@ -83,4 +97,31 @@ export async function getProjectAssignees(
     })),
     error: null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Set project assignees (replaces all existing assignees)
+// ---------------------------------------------------------------------------
+
+export async function setProjectAssignees(
+  projectId: string,
+  organizationId: string,
+  userIds: string[],
+  client: DbClient = supabase,
+): Promise<{ error: string | null }> {
+  const { error: deleteError } = await client
+    .from("project_assignees")
+    .delete()
+    .eq("project_id", projectId);
+
+  if (deleteError) return { error: deleteError.message };
+
+  if (userIds.length > 0) {
+    const { error: insertError } = await client.from("project_assignees").insert(
+      userIds.map((userId) => ({ project_id: projectId, user_id: userId, organization_id: organizationId })),
+    );
+    if (insertError) return { error: insertError.message };
+  }
+
+  return { error: null };
 }

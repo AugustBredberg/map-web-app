@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useOrg } from "@/context/OrgContext";
+import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
+import { hasMinRole } from "@/lib/supabase";
 
 const navItems = [
   {
@@ -37,6 +39,16 @@ const navItems = [
   },
 ];
 
+const financialItem = {
+  labelKey: "nav.financial",
+  href: "/financial",
+  icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+};
+
 const collapseIcon = (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
@@ -54,9 +66,13 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("navCollapsed") === "true";
   });
-  const { activeOrg } = useOrg();
+  const { activeOrg, activeRole } = useOrg();
+  const { systemRole } = useAuth();
   const pathname = usePathname();
   const { t } = useLocale();
+
+  const showFinancial =
+    (!!activeOrg && hasMinRole(activeRole, "admin")) || systemRole === "dev";
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -68,6 +84,12 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
 
   const settingsItem = navItems.find((item) => item.href === "/settings")!;
   const sidebarItems = navItems.filter((item) => item.href !== "/settings");
+  const allSidebarItems = showFinancial
+    ? [...sidebarItems, financialItem]
+    : sidebarItems;
+  const allMobileItems = showFinancial
+    ? [navItems[0], navItems[1], financialItem, navItems[2]]
+    : navItems;
 
   return (
     <div className="flex h-screen w-screen flex-col md:flex-row">
@@ -88,7 +110,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
         {/* Nav links */}
         <nav className="flex-1 px-2 py-4">
           <ul className="space-y-1">
-            {sidebarItems.map((item) => {
+            {allSidebarItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
                 <li key={item.href}>
@@ -148,7 +170,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom tab bar */}
       <nav className="shrink-0 bg-sidebar-bg md:hidden">
         <ul className="flex items-center justify-around">
-          {navItems.map((item) => {
+          {allMobileItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <li key={item.href} className="flex-1">

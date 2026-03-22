@@ -2,9 +2,11 @@
 
 import { useState, useCallback, useMemo } from "react";
 import type { OrganizationMember } from "@/lib/supabase";
+import { hasMinRole } from "@/lib/supabase";
 import PersonChip from "@/components/project/PersonChip";
 import { STATUS_LABELS, STATUS_ICON_PATHS } from "@/lib/projectStatus";
 import { useLocale } from "@/context/LocaleContext";
+import { useOrg } from "@/context/OrgContext";
 
 const TIME_FILTER_ICONS = {
   today: (
@@ -63,6 +65,7 @@ export default function ProjectFilters({
   onAssigneeFiltersChange,
 }: Props) {
   const { t } = useLocale();
+  const { activeRole } = useOrg();
 
   const TIME_FILTERS = useMemo(() => [
     { id: "today", label: t("filters.todaysJobs"), icon: TIME_FILTER_ICONS.today },
@@ -192,8 +195,8 @@ export default function ProjectFilters({
           )}
         </div>}
 
-        {/* Personer */}
-        <div>
+        {/* Personer — admin only */}
+        {hasMinRole(activeRole, "admin") && <div>
           <button
             className="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted hover:bg-muted-bg"
             onClick={() => setPeopleOpen((v) => !v)}
@@ -218,7 +221,7 @@ export default function ProjectFilters({
               </div>
             )
           )}
-        </div>
+        </div>}
       </div>
     </div>
   );
