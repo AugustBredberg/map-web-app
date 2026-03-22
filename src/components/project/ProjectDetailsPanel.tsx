@@ -75,19 +75,19 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
 
   const handleCancel = useCallback(async () => {
     setIsCancelling(true);
-    const { data, error } = await updateProjectStatus(project.project_id, 5);
+    const { data, error } = await updateProjectStatus(project.project_id, 6);
     setIsCancelling(false);
     setShowCancelConfirm(false);
     if (error || !data) {
       setTransitionError(error ?? t("projectDetails.failedToCancelProject"));
       return;
     }
-    setCurrentStatus(5);
+    setCurrentStatus(6);
     onProjectUpdated?.(data);
   }, [project.project_id, onProjectUpdated, t]);
 
   const startDate = formatDate(project.start_time, locale);
-  const isCancelled = currentStatus === 5;
+  const isCancelled = currentStatus === 6;
   const isAssignee = !!session && assigneeData.some((a) => a.id === session.user.id);
 
   return (
