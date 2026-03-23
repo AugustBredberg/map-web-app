@@ -96,9 +96,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
         const savedOrg = resolvedOrgs.find((o) => o.organization_id === savedId) ?? null;
         if (savedOrg) {
           setActiveOrgState(savedOrg);
-        } else if (resolvedOrgs.length === 1) {
-          setActiveOrgState(resolvedOrgs[0]);
-          localStorage.setItem(STORAGE_KEY, resolvedOrgs[0].organization_id);
+        } else if (resolvedOrgs.length > 0) {
+          const fallback = resolvedOrgs[0];
+          setActiveOrgState(fallback);
+          localStorage.setItem(STORAGE_KEY, fallback.organization_id);
         } else {
           setActiveOrgState(null);
         }
@@ -153,13 +154,15 @@ export function OrgProvider({ children }: { children: ReactNode }) {
         const m = resolvedMembers.find((m) => m.organization_id === savedOrg.organization_id);
         setActiveRole(m?.role ?? null);
         setDisplayName(m?.display_name ?? null);
-      } else if (resolvedOrgs.length === 1) {
-        // Auto-select if user only belongs to one org
-        setActiveOrgState(resolvedOrgs[0]);
-        const m = resolvedMembers.find((m) => m.organization_id === resolvedOrgs[0].organization_id);
+      } else if (resolvedOrgs.length > 0) {
+        // Auto-select the first org when no saved selection exists (e.g. fresh mobile session
+        // where localStorage hasn't been populated yet, or the saved org was deleted).
+        const fallback = resolvedOrgs[0];
+        setActiveOrgState(fallback);
+        const m = resolvedMembers.find((m) => m.organization_id === fallback.organization_id);
         setActiveRole(m?.role ?? null);
         setDisplayName(m?.display_name ?? null);
-        localStorage.setItem(STORAGE_KEY, resolvedOrgs[0].organization_id);
+        localStorage.setItem(STORAGE_KEY, fallback.organization_id);
       } else {
         setActiveOrgState(null);
         setActiveRole(null);

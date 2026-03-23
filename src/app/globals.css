@@ -3,6 +3,15 @@
 @source "../../node_modules/@heroui/theme/dist";
 @custom-variant dark (&:is(.dark *));
 
+/* Prevent iOS Safari from auto-zooming on input focus.
+   iOS only zooms when font-size < 16px; this overrides any smaller sizes
+   set by component libraries (e.g. HeroUI inputs default to ~14px). */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* ============================================================
    Theme tokens — light (default)
    ============================================================ */

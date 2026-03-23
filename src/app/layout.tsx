@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { AuthProvider } from "@/context/AuthContext";
@@ -11,6 +11,13 @@ import { LocaleProvider } from "@/context/LocaleContext";
 export const metadata: Metadata = {
   title: "Map Web App",
   description: "Interactive map application built with MapLibre GL JS and Supabase",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
