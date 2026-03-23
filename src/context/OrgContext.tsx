@@ -68,7 +68,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     if (authLoading) return;
 
     const fetchOrgs = async () => {
-      if (!session) {
+      if (!userId) {
         setOrganizations([]);
         setActiveOrgState(null);
         setActiveRole(null);
@@ -110,8 +110,8 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       }
 
       // Step 1: get the org memberships (including role) for this user
-      console.log("Fetching org memberships for user:", session.user.id);
-      const { data: members, error: memberError } = await getMembershipsByUserId(session.user.id);
+      console.log("Fetching org memberships for user:", userId);
+      const { data: members, error: memberError } = await getMembershipsByUserId(userId);
 
       if (memberError) {
         console.error("Failed to fetch memberships:", memberError);
@@ -173,7 +173,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     };
 
     fetchOrgs();
-  }, [userId, authLoading, refreshKey]);
+  }, [userId, authLoading, systemRole, refreshKey]);
 
   // Keep activeRole in sync when setActiveOrg is called manually (e.g. from settings)
   const setActiveOrgWithRole = useCallback((org: Organization) => {
