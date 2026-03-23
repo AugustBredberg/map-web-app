@@ -92,7 +92,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
     : navItems;
 
   return (
-    <div className="flex h-screen w-screen flex-col md:flex-row">
+    <div className="flex h-dvh w-screen flex-col md:flex-row">
       {/* Desktop sidebar */}
       <aside
         className={`hidden md:flex md:flex-col bg-sidebar-bg text-sidebar-fg transition-all duration-200 ${
@@ -165,10 +165,12 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Page content */}
-      {children}
+      <div className="flex flex-col flex-1 min-h-0 pb-16 md:pb-0">
+        {children}
+      </div>
 
       {/* Mobile bottom tab bar */}
-      <nav className="shrink-0 bg-sidebar-bg md:hidden">
+      <nav className="fixed bottom-0 inset-x-0 z-30 bg-sidebar-bg md:hidden">
         <ul className="flex items-center justify-around">
           {allMobileItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
