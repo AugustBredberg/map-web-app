@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Input } from "@heroui/react";
-import { createInvitation } from "@/lib/invitations";
+import { sendInvite } from "@/lib/invitations";
 import { useLocale } from "@/context/LocaleContext";
 
 interface Props {
@@ -24,7 +24,7 @@ export default function InviteMemberForm({ organizationId, invitedBy, onInvited 
     setError(null);
     setSuccess(false);
 
-    const { error: inviteError } = await createInvitation(organizationId, email.trim().toLowerCase(), invitedBy);
+    const { error: inviteError } = await sendInvite(organizationId, email.trim().toLowerCase(), invitedBy);
     setLoading(false);
 
     if (inviteError) {
