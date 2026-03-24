@@ -166,9 +166,10 @@ export const translations = {
       signOutAndContinue: "Sign out \u0026 continue",
       accepting: "Joining\u2026",
       successTitle: "Welcome!",
-      successMessage: "You\u2019ve successfully joined the organization. Redirecting\u2026",
+      successMessage: "You\u2019ve successfully joined the organization.",
       goToApp: "Go to app",
       accountExistsError: "An account with this email already exists. Please use the \u201cSign in\u201d tab instead.",
+      loggedInJoinButton: "Join organization",
     },
     drawer: {
       close: "Close",
@@ -395,9 +396,10 @@ export const translations = {
       signOutAndContinue: "Logga ut \u0026 forts\u00e4tt",
       accepting: "G\u00e5r med\u2026",
       successTitle: "V\u00e4lkommen!",
-      successMessage: "Du har g\u00e5tt med i organisationen. Omdirigerar\u2026",
+      successMessage: "Du har g\u00e5tt med i organisationen.",
       goToApp: "G\u00e5 till appen",
       accountExistsError: "Det finns redan ett konto med den h\u00e4r e-postadressen. Anv\u00e4nd fl\u00e4iken \u201cLogga in\u201d ist\u00e4llet.",
+      loggedInJoinButton: "G\u00e5 med i organisationen",
     },
     drawer: {
       close: "St\u00e4ng",

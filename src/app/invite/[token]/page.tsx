@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useOrg } from "@/context/OrgContext";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Input, Spinner, Tabs, Tab } from "@heroui/react";
 import { supabase } from "@/lib/supabase";
@@ -19,12 +20,12 @@ export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const { session, loading: authLoading } = useAuth();
+  const { refreshOrgs } = useOrg();
   const { t } = useLocale();
 
   // Raw state — page view is derived from these
   const [invitation, setInvitation] = useState<InvitationDetail | null>(null);
   const [inviteLoadFailed, setInviteLoadFailed] = useState(false);
-  const [isAutoAccepting, setIsAutoAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,18 +33,16 @@ export default function InvitePage() {
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
 
-  // Prevent the auto-accept from running more than once
-  const autoAcceptTriggeredRef = useRef(false);
-
   // Derive the current page view — no setState calls needed in effects for this
   const pageState = useMemo(() => {
     if (accepted) return "done" as const;
-    if (isAutoAccepting) return "auto-accepting" as const;
     if (inviteLoadFailed) return "error" as const;
     if (!invitation || authLoading) return "loading" as const;
     if (session && session.user.email !== invitation.invitee_email) return "wrong-account" as const;
+    // Already signed in with the right account — show a join confirmation form
+    if (session && session.user.email === invitation.invitee_email) return "logged-in" as const;
     return "form" as const;
-  }, [accepted, isAutoAccepting, inviteLoadFailed, invitation, authLoading, session]);
+  }, [accepted, inviteLoadFailed, invitation, authLoading, session]);
 
   // 1. Load invitation by token
   useEffect(() => {
@@ -56,41 +55,25 @@ export default function InvitePage() {
     });
   }, [token]);
 
-  const acceptForCurrentUser = useCallback(
-    async (userId: string, userEmail: string) => {
-      setIsAutoAccepting(true);
-      const name = displayName.trim() || userEmail;
-      const { error: acceptError } = await acceptInvitationByToken(token, userId, name);
-      if (acceptError) {
-        setError(acceptError);
-        setIsAutoAccepting(false);
-      } else {
-        setIsAutoAccepting(false);
-        setAccepted(true);
-      }
-    },
-    [token, displayName],
-  );
-
-  // 2. Auto-accept when user is already signed in with the correct email
-  useEffect(() => {
-    if (
-      !authLoading &&
-      invitation &&
-      session &&
-      session.user.email === invitation.invitee_email &&
-      !autoAcceptTriggeredRef.current
-    ) {
-      autoAcceptTriggeredRef.current = true;
-      setTimeout(() => {
-        void acceptForCurrentUser(session.user.id, session.user.email!);
-      }, 0);
+  // Handle join for an already-authenticated user ("logged-in" state)
+  const handleLoggedInJoin = useCallback(async () => {
+    if (!session || !invitation) return;
+    setError(null);
+    setIsSubmitting(true);
+    const name = displayName.trim() || session.user.email!;
+    const { error: acceptError } = await acceptInvitationByToken(token, session.user.id, name);
+    if (acceptError) {
+      setError(acceptError);
+      setIsSubmitting(false);
+    } else {
+      refreshOrgs();
+      setIsSubmitting(false);
+      setAccepted(true);
     }
-  }, [authLoading, invitation, session, acceptForCurrentUser]);
+  }, [token, displayName, session, invitation, refreshOrgs]);
 
   const handleSignOut = async () => {
     await signOut();
-    autoAcceptTriggeredRef.current = false;
   };
 
   // Handle "Create account" tab submission
@@ -99,6 +82,8 @@ export default function InvitePage() {
     setError(null);
     setIsSubmitting(true);
 
+    // Edge function creates the user with email_confirm:true (invite link = proof of ownership)
+    // and adds them to the org atomically using the service role key.
     const { data: fnData, error: fnError } = await supabase.functions.invoke("accept-invite", {
       body: {
         token,
@@ -109,7 +94,7 @@ export default function InvitePage() {
 
     if (fnError || fnData?.error) {
       const msg: string = fnData?.error ?? fnError?.message ?? "Unknown error";
-      if (fnData?.code === "account_exists" || msg.toLowerCase().includes("already exists")) {
+      if (fnData?.code === "account_exists" || msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already exists")) {
         setError(t("invite.accountExistsError"));
         setFormMode("sign-in");
       } else {
@@ -119,6 +104,7 @@ export default function InvitePage() {
       return;
     }
 
+    // Account created and org membership set — now sign in.
     const { error: signInError } = await signInWithPassword(invitation.invitee_email, password);
     if (signInError) {
       setError(signInError);
@@ -159,6 +145,7 @@ export default function InvitePage() {
       return;
     }
 
+    refreshOrgs();
     setIsSubmitting(false);
     setAccepted(true);
   };
@@ -304,10 +291,32 @@ export default function InvitePage() {
           </div>
         )}
 
-        {pageState === "auto-accepting" && (
-          <div className="flex flex-col items-center gap-3">
-            <Spinner color="primary" />
-            <p className="text-sm text-muted">{t("invite.accepting")}</p>
+        {pageState === "logged-in" && invitation && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="text-sm text-muted">{t("invite.youreInvited")}</p>
+              <h1 className="text-2xl font-bold text-foreground">{invitation.organization_name}</h1>
+            </div>
+            <Input
+              type="text"
+              label={t("invite.displayName")}
+              placeholder={t("invite.displayNamePlaceholder")}
+              value={displayName}
+              onValueChange={setDisplayName}
+              variant="bordered"
+              size="sm"
+              autoComplete="name"
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && void handleLoggedInJoin()}
+            />
+            <Button
+              color="primary"
+              isLoading={isSubmitting}
+              onPress={() => void handleLoggedInJoin()}
+            >
+              {t("invite.loggedInJoinButton")}
+            </Button>
+            {error && <p className="text-xs text-danger">{error}</p>}
           </div>
         )}
 

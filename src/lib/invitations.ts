@@ -140,32 +140,32 @@ export async function getInvitationByToken(
   client: DbClient = supabase,
 ): Promise<{ data: InvitationDetail | null; error: string | null }> {
   const { data, error } = await client
-    .from("organization_invitations")
-    .select("id, organization_id, invitee_email, expires_at, accepted_at")
-    .eq("token", token)
-    .is("accepted_at", null)
+    .rpc("get_invitation_by_token", { p_token: token })
     .single();
 
   if (error || !data) return { data: null, error: error?.message ?? "Invitation not found" };
 
-  if (data.expires_at && new Date(data.expires_at as string) < new Date()) {
+  const row = data as {
+    id: number;
+    organization_id: string;
+    organization_name: string;
+    invitee_email: string;
+    expires_at: string | null;
+    accepted_at: string | null;
+  };
+
+  if (row.expires_at && new Date(row.expires_at) < new Date()) {
     return { data: null, error: "Invitation has expired" };
   }
 
-  const { data: org } = await client
-    .from("organizations")
-    .select("name")
-    .eq("organization_id", data.organization_id)
-    .single();
-
   return {
     data: {
-      id: data.id as number,
-      organization_id: data.organization_id as string,
-      organization_name: (org?.name as string) ?? "Unknown organization",
-      invitee_email: data.invitee_email as string,
-      expires_at: (data.expires_at as string | null) ?? null,
-      accepted_at: (data.accepted_at as string | null) ?? null,
+      id: row.id,
+      organization_id: row.organization_id,
+      organization_name: row.organization_name ?? "Unknown organization",
+      invitee_email: row.invitee_email,
+      expires_at: row.expires_at,
+      accepted_at: row.accepted_at,
     },
     error: null,
   };
@@ -173,41 +173,19 @@ export async function getInvitationByToken(
 
 /**
  * Accept an invitation by token for an already-authenticated user.
- * The caller must verify that session.user.email === invitation.invitee_email
- * before calling this function.
+ * Delegates to a SECURITY DEFINER RPC so no direct-table RLS policies are needed.
+ * The RPC validates that the invitation email matches auth.email() server-side.
  */
 export async function acceptInvitationByToken(
   token: string,
-  userId: string,
+  _userId: string,
   displayName: string,
   client: DbClient = supabase,
 ): Promise<{ error: string | null }> {
-  const { data: inv, error: fetchError } = await client
-    .from("organization_invitations")
-    .select("id, organization_id")
-    .eq("token", token)
-    .is("accepted_at", null)
-    .single();
+  const { error } = await client.rpc("accept_invitation_by_token", {
+    p_token: token,
+    p_display_name: displayName,
+  });
 
-  if (fetchError || !inv) return { error: fetchError?.message ?? "Invitation not found" };
-
-  const { error: memberError } = await client
-    .from("organization_members")
-    .insert({
-      organization_id: inv.organization_id,
-      user_id: userId,
-      role: "member",
-      display_name: displayName,
-    });
-
-  if (memberError && memberError.code !== "23505") {
-    return { error: memberError.message };
-  }
-
-  const { error: updateError } = await client
-    .from("organization_invitations")
-    .update({ accepted_at: new Date().toISOString() })
-    .eq("id", inv.id);
-
-  return { error: updateError?.message ?? null };
+  return { error: error?.message ?? null };
 }
