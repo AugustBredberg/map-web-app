@@ -46,7 +46,6 @@ export type Project = {
   updated_at: string;
   created_by: string | null;
   start_time: string | null;
-  expected_hours: number | null;
   project_status: number | null;
   title: string;
   description: string | null;
