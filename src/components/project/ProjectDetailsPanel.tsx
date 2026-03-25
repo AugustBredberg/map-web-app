@@ -6,7 +6,7 @@ import { CalendarDate, parseDate } from "@internationalized/date";
 import PersonChip from "@/components/project/PersonChip";
 
 import { getProjectAssignees, getOrgMembers, setProjectAssignees } from "@/lib/members";
-import { updateProjectStatus, updateProject } from "@/lib/projects";
+import { updateProjectStatus, updateProject, deleteProject } from "@/lib/projects";
 import ProjectAssigneeHoursLog from "@/components/project/ProjectAssigneeHoursLog";
 import { useAuth } from "@/context/AuthContext";
 import { useOrg } from "@/context/OrgContext";
@@ -23,6 +23,7 @@ import type { Locale } from "@/lib/i18n";
 interface Props {
   project: Project;
   onProjectUpdated?: (updated: Project) => void;
+  onProjectDeleted?: (projectId: string) => void;
 }
 
 function formatDate(iso: string | null, locale: Locale) {
@@ -61,9 +62,9 @@ function PencilIcon() {
   );
 }
 
-export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props) {
+export default function ProjectDetailsPanel({ project, onProjectUpdated, onProjectDeleted }: Props) {
   const { t, locale } = useLocale();
-  const { session } = useAuth();
+  const { session, systemRole } = useAuth();
   const { activeRole, activeOrg } = useOrg();
   const { updateTitle } = useDrawer();
   const isAdmin = hasMinRole(activeRole, "admin");
@@ -82,6 +83,9 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Edit state
   const [editingField, setEditingField] = useState<EditField | null>(null);
@@ -220,11 +224,25 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
     setEditingField(null);
   }, [draftDescription, project.project_id, onProjectUpdated, t]);
 
+  const handleDelete = useCallback(async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    const { error } = await deleteProject(project.project_id);
+    setIsDeleting(false);
+    if (error) {
+      setDeleteError(error ?? t("projectDetails.failedToDeleteProject"));
+      return;
+    }
+    setShowDeleteConfirm(false);
+    onProjectDeleted?.(project.project_id);
+  }, [project.project_id, onProjectDeleted, t]);
+
   const startDate = formatDate(currentStartTime, locale);
   const isCancelled = currentStatus === 6;
   const isAssignee = !!session && assigneeData.some((a) => a.id === session.user.id);
   // Show edit buttons only when no field is currently being edited
   const canEdit = isAdmin && editingField === null;
+  const canDelete = (isAdmin || systemRole === "dev") && editingField === null;
 
   return (
     <div className="flex flex-col gap-5 max-w-xl">
@@ -492,6 +510,24 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
         </div>
       )}
 
+      {/* Delete — destructive, admin/dev only */}
+      {canDelete && (
+        <div className={!isCancelled && isAdmin ? "" : "pt-2"}>
+          <Button
+            variant="light"
+            color="danger"
+            size="sm"
+            fullWidth
+            isDisabled={isTransitioning || isCancelling || isDeleting}
+            onPress={() => setShowDeleteConfirm(true)}
+            className="text-muted hover:text-red-500"
+          >
+            {t("projectDetails.deleteJob")}
+          </Button>
+          {deleteError && <p className="mt-1 text-center text-xs text-red-500">{deleteError}</p>}
+        </div>
+      )}
+
       {/* Created — de-emphasised footnote */}
       <p className="text-center text-xs text-muted">{t("projectDetails.created")} {formatCreated(project.created_at, locale)}</p>
 
@@ -503,6 +539,16 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
         onConfirm={handleCancel}
         onCancel={() => setShowCancelConfirm(false)}
         isLoading={isCancelling}
+      />
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title={t("projectDetails.deleteJobTitle")}
+        message={t("projectDetails.deleteJobMessage")}
+        confirmLabel={t("projectDetails.deleteJobConfirm")}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        isLoading={isDeleting}
       />
     </div>
   );

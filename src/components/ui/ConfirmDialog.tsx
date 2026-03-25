@@ -42,7 +42,7 @@ export default function ConfirmDialog({
       <ModalContent>
         <ModalHeader>{resolvedTitle}</ModalHeader>
         <ModalBody>
-          <p className="text-sm text-gray-600">{message}</p>
+          <p className="text-sm text-foreground">{message}</p>
         </ModalBody>
         <ModalFooter>
           <Button variant="light" onPress={onCancel} isDisabled={isLoading}>

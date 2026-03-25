@@ -10,9 +10,10 @@ import { useLocale } from "@/context/LocaleContext";
 interface Props {
   projects: Project[];
   onProjectUpdated: (updated: Project) => void;
+  onProjectDeleted?: (projectId: string) => void;
 }
 
-export default function ProjectStackPanel({ projects, onProjectUpdated }: Props) {
+export default function ProjectStackPanel({ projects, onProjectUpdated, onProjectDeleted }: Props) {
   const { t } = useLocale();
   const { updateTitle } = useDrawer();
   const [index, setIndex] = useState(0);
@@ -63,6 +64,7 @@ export default function ProjectStackPanel({ projects, onProjectUpdated }: Props)
         <ProjectDetailsPanel
           project={current}
           onProjectUpdated={onProjectUpdated}
+          onProjectDeleted={onProjectDeleted}
         />
       )}
     </div>

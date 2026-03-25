@@ -6,10 +6,8 @@ import NavMenu from "@/components/NavMenu";
 import ProjectFilters from "@/components/project/ProjectFilters";
 import ProjectList from "@/components/project/ProjectList";
 import ProjectDetailsPanel from "@/components/project/ProjectDetailsPanel";
-import CreateProjectForm from "@/components/project/CreateProjectForm";
 import { useDrawer } from "@/context/DrawerContext";
 import { useOrg } from "@/context/OrgContext";
-import { useNewProject } from "@/context/NewProjectContext";
 import { fetchProjects } from "@/lib/projects";
 import type { ProjectFetchFilters } from "@/lib/projects";
 import { getOrgMembers } from "@/lib/members";
@@ -43,17 +41,7 @@ export default function ProjectsPage() {
   const [activeAssigneeFilters, setActiveAssigneeFilters] = useState<Set<string>>(new Set());
   const { openDrawer } = useDrawer();
   const { activeOrg } = useOrg();
-  const { startCreating, cancelCreating } = useNewProject();
   const { t } = useLocale();
-
-  const handleNewProject = useCallback(() => {
-    startCreating();
-    openDrawer(<CreateProjectForm />, {
-      title: t("createProject.drawerTitle"),
-      backdrop: false,
-      onClose: cancelCreating,
-    });
-  }, [openDrawer, startCreating, cancelCreating, t]);
 
   const handleTimeFilterChange = useCallback((id: string | null) => {
     setActiveTimeFilter(id);
@@ -119,21 +107,6 @@ export default function ProjectsPage() {
         {/* Desktop: Filters sidebar */}
         <div className="pr-2 p-4 h-full hidden md:flex">
           <aside className="rounded-xl flex flex-col w-52 shrink-0 bg-surface overflow-y-auto">
-            {/* New project button */}
-            <div className="p-3">
-              <Button
-                color="primary"
-                onPress={handleNewProject}
-                fullWidth
-                startContent={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                }
-              >
-            {t("projects.newJob")}
-              </Button>
-            </div>
             <ProjectFilters
               members={members}
               defaultTimeFilter={activeTimeFilter}
@@ -204,7 +177,14 @@ export default function ProjectsPage() {
             </div>
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
               <div className="max-w-xl mx-auto">
-                <ProjectDetailsPanel key={selectedProject.project_id} project={selectedProject} />
+                <ProjectDetailsPanel
+                  key={selectedProject.project_id}
+                  project={selectedProject}
+                  onProjectDeleted={(id) => {
+                    setProjects((prev) => prev.filter((p) => p.project_id !== id));
+                    setSelectedProject(null);
+                  }}
+                />
               </div>
             </div>
           </div>

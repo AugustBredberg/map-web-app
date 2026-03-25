@@ -123,6 +123,21 @@ export async function updateProject(
 }
 
 // ---------------------------------------------------------------------------
+// Delete
+// ---------------------------------------------------------------------------
+
+export async function deleteProject(
+  projectId: string,
+  client: DbClient = supabase,
+): Promise<{ error: string | null }> {
+  const { error } = await client
+    .from("projects")
+    .delete()
+    .eq("project_id", projectId);
+  return { error: error?.message ?? null };
+}
+
+// ---------------------------------------------------------------------------
 // Update status
 // ---------------------------------------------------------------------------
 

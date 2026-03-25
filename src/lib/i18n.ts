@@ -134,6 +134,11 @@ export const translations = {
       failedToSave: "Failed to save changes",
       noDescription: "No description",
       titleAriaLabel: "Project title",
+      deleteJob: "Delete job",
+      deleteJobTitle: "Delete job",
+      deleteJobMessage: "Are you sure you want to permanently delete this job? This action cannot be undone.",
+      deleteJobConfirm: "Yes, delete job",
+      failedToDeleteProject: "Failed to delete project",
     },
     hoursLog: {
       title: "Log Worked Hours",
@@ -406,6 +411,11 @@ export const translations = {
       failedToSave: "Misslyckades att spara ändringar",
       noDescription: "Ingen beskrivning",
       titleAriaLabel: "Projekttitel",
+      deleteJob: "Radera jobb",
+      deleteJobTitle: "Radera jobb",
+      deleteJobMessage: "Är du säker på att du vill radera det här jobbet permanent? Det går inte att ångra.",
+      deleteJobConfirm: "Ja, radera jobb",
+      failedToDeleteProject: "Kunde inte radera projektet",
     },
     hoursLog: {
       title: "Logga arbetade timmar",

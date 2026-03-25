@@ -85,6 +85,13 @@ export default function MapView() {
       }
     };
 
+    const onProjectDeleted = (projectId: string) => {
+      markers.removeProjectMarker(projectId);
+      markers.selectedProjectIdRef.current = null;
+      markers.applySelection();
+      closeDrawer();
+    };
+
     const drawerOptions = {
       title: t("projectDetails.title"),
       backdrop: false,
@@ -96,12 +103,12 @@ export default function MapView() {
 
     if (projects.length === 1) {
       openDrawerRef.current(
-        <ProjectDetailsPanel project={first} onProjectUpdated={onProjectUpdated} />,
+        <ProjectDetailsPanel project={first} onProjectUpdated={onProjectUpdated} onProjectDeleted={onProjectDeleted} />,
         drawerOptions,
       );
     } else {
       openDrawerRef.current(
-        <ProjectStackPanel projects={projects} onProjectUpdated={onProjectUpdated} />,
+        <ProjectStackPanel projects={projects} onProjectUpdated={onProjectUpdated} onProjectDeleted={onProjectDeleted} />,
         drawerOptions,
       );
     }
