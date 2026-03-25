@@ -4,7 +4,7 @@ import type { Project } from "@/lib/supabase";
 type DbClient = typeof supabase;
 
 const PROJECT_FIELDS =
-  "project_id, created_at, updated_at, created_by, organization_id, title, description, project_status, start_time, customer_id, customer_location_id, customer_location:customer_locations!customer_location_id(name, address, location)";
+  "project_id, created_at, updated_at, created_by, organization_id, title, description, project_status, start_time, expected_hours, customer_id, customer_location_id, customer_location:customer_locations!customer_location_id(name, address, location)";
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -80,7 +80,7 @@ export async function createProject(
 
   if (error) return { data: null, error: error.message };
 
-  const project = data as Project;
+  const project = data as unknown as Project;
 
   if (assigneeIds.length > 0) {
     const { error: assigneeError } = await client.from("project_assignees").insert(
