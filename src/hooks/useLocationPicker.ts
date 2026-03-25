@@ -1,12 +1,12 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import maplibregl from "maplibre-gl";
-import type { PickedLocation } from "@/context/NewProjectContext";
+import type { PinCoords } from "@/context/NewProjectContext";
 
 export function useLocationPicker(
   mapRef: MutableRefObject<maplibregl.Map | null>,
   isActive: boolean,
-  onPick: (loc: PickedLocation) => void,
-  initialLocation?: PickedLocation | null,
+  onPick: (loc: PinCoords) => void,
+  initialLocation?: PinCoords | null,
   cleanupOnDeactivate = true,
 ) {
   const tempMarkerRef = useRef<maplibregl.Marker | null>(null);
