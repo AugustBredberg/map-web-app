@@ -4,7 +4,7 @@ import type { Project } from "@/lib/supabase";
 type DbClient = typeof supabase;
 
 const PROJECT_FIELDS =
-  "project_id, created_at, updated_at, created_by, organization_id, title, description, location, project_status, start_time";
+  "project_id, created_at, updated_at, created_by, organization_id, title, description, project_status, start_time, customer_id, customer_location_id, customer_location:customer_locations!customer_location_id(name, address, location)";
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -62,7 +62,8 @@ export interface CreateProjectInput {
   description: string | null;
   project_status: number;
   start_time: string | null;
-  location: string; // WKT e.g. "POINT(lng lat)"
+  customer_id: string;
+  customer_location_id: string;
   organization_id: string | null;
 }
 

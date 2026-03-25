@@ -203,7 +203,9 @@ export default function ProjectsPage() {
               </span>
             </div>
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
-              <ProjectDetailsPanel key={selectedProject.project_id} project={selectedProject} />
+              <div className="max-w-xl mx-auto">
+                <ProjectDetailsPanel key={selectedProject.project_id} project={selectedProject} />
+              </div>
             </div>
           </div>
         ) : (

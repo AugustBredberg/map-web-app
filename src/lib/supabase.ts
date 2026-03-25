@@ -18,6 +18,27 @@ export function hasMinRole(userRole: string | null, minRole: Role): boolean {
 /** System-level (cross-org) roles. A user with no profile row is a regular user. */
 export type SystemRole = "dev";
 
+export type Customer = {
+  customer_id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  organization_id: string | null;
+  created_at: string;
+};
+
+export type CustomerLocation = {
+  customer_location_id: string;
+  customer_id: string;
+  name: string;
+  address: string | null;
+  // PostGIS geometry column — returned as GeoJSON by the REST API
+  location: { type: "Point"; coordinates: [number, number] } | null;
+  created_by: string | null;
+  created_at: string;
+};
+
 export type Project = {
   project_id: string;
   organization_id: string | null;
@@ -29,8 +50,14 @@ export type Project = {
   project_status: number | null;
   title: string;
   description: string | null;
-  // PostGIS geometry column — returned as GeoJSON by the REST API
-  location: { type: "Point"; coordinates: [number, number] } | null;
+  customer_id: string | null;
+  customer_location_id: string | null;
+  // Joined from customer_locations for map display
+  customer_location: {
+    name: string;
+    address: string | null;
+    location: { type: "Point"; coordinates: [number, number] } | null;
+  } | null;
 };
 
 export type Organization = {

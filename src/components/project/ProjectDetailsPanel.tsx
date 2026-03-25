@@ -227,8 +227,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated }: Props
   const canEdit = isAdmin && editingField === null;
 
   return (
-    <div className="flex flex-col gap-5 max-w-xl mx-auto">
-
+    <div className="flex flex-col gap-5 max-w-xl">
       {/* Title */}
       {editingField === "title" ? (
         <div className="flex flex-col gap-2">

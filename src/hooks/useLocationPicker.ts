@@ -7,6 +7,7 @@ export function useLocationPicker(
   isActive: boolean,
   onPick: (loc: PickedLocation) => void,
   initialLocation?: PickedLocation | null,
+  cleanupOnDeactivate = true,
 ) {
   const tempMarkerRef = useRef<maplibregl.Marker | null>(null);
 
@@ -48,13 +49,13 @@ export function useLocationPicker(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
-  // Remove the temp pin whenever not active
+  // Remove the temp pin whenever not active (only if cleanupOnDeactivate is true)
   useEffect(() => {
-    if (!isActive) {
+    if (!isActive && cleanupOnDeactivate) {
       tempMarkerRef.current?.remove();
       tempMarkerRef.current = null;
     }
-  }, [isActive]);
+  }, [isActive, cleanupOnDeactivate]);
 
   return tempMarkerRef;
 }

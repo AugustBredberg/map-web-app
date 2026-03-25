@@ -9,17 +9,34 @@ import {
   type ReactNode,
 } from "react";
 import { type ZonedDateTime } from "@internationalized/date";
-import type { Project } from "@/lib/supabase";
+import type { Project, Customer, CustomerLocation } from "@/lib/supabase";
 import { createProject } from "@/lib/projects";
+import { createCustomer } from "@/lib/customers";
+import { createCustomerLocation } from "@/lib/customerLocations";
 import { useOrg } from "@/context/OrgContext";
+import { useAuth } from "@/context/AuthContext";
 
-export interface PickedLocation {
+export type CreateStep =
+  | "idle"
+  | "pin"       // waiting for user to click map
+  | "address"   // pin placed, geocoding + confirming address
+  | "customer"  // address confirmed, selecting customer
+  | "location"  // customer picked, selecting/creating location
+  | "details"   // customer+location resolved, project details form
+  | "saving";   // submitting to DB
+
+export interface PinCoords {
   lng: number;
   lat: number;
 }
 
 interface NewProjectContextValue {
-  isCreating: boolean;
+  step: CreateStep;
+  pinCoords: PinCoords | null;
+  detectedAddress: string | null;
+  isGeocodingAddress: boolean;
+  selectedCustomer: Customer | null;
+  selectedLocation: CustomerLocation | null;
   title: string;
   setTitle: (t: string) => void;
   description: string;
@@ -28,20 +45,31 @@ interface NewProjectContextValue {
   setStartTime: (t: ZonedDateTime | null) => void;
   assignees: string[];
   setAssignees: (ids: string[]) => void;
-  location: PickedLocation | null;
-  setLocation: (loc: PickedLocation) => void;
-  isSaving: boolean;
+  isWorking: boolean;
   saveError: string | null;
+  // Step actions
   startCreating: () => void;
   cancelCreating: () => void;
-  /** Run the save and call onProjectSaved on success. */
+  pinPlaced: (coords: PinCoords) => void;
+  confirmAddress: () => void;
+  goBackToPin: () => void;
+  selectCustomer: (customer: Customer) => void;
+  createAndSelectCustomer: (name: string) => Promise<void>;
+  selectLocation: (location: CustomerLocation) => void;
+  createAndSelectLocation: (name: string, address: string | null) => Promise<void>;
+  goBackToCustomer: () => void;
   submitProject: () => Promise<void>;
   /** Register a callback that receives the saved project after a successful submit. */
   setOnProjectSaved: (cb: ((project: Project) => void) | null) => void;
 }
 
 const NewProjectContext = createContext<NewProjectContextValue>({
-  isCreating: false,
+  step: "idle",
+  pinCoords: null,
+  detectedAddress: null,
+  isGeocodingAddress: false,
+  selectedCustomer: null,
+  selectedLocation: null,
   title: "",
   setTitle: () => {},
   description: "",
@@ -50,26 +78,54 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   setStartTime: () => {},
   assignees: [],
   setAssignees: () => {},
-  location: null,
-  setLocation: () => {},
-  isSaving: false,
+  isWorking: false,
   saveError: null,
   startCreating: () => {},
   cancelCreating: () => {},
+  pinPlaced: () => {},
+  confirmAddress: () => {},
+  goBackToPin: () => {},
+  selectCustomer: () => {},
+  createAndSelectCustomer: async () => {},
+  selectLocation: () => {},
+  createAndSelectLocation: async () => {},
+  goBackToCustomer: () => {},
   submitProject: async () => {},
   setOnProjectSaved: () => {},
 });
 
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? "";
+
+async function reverseGeocode(lng: number, lat: number): Promise<string | null> {
+  if (!MAPTILER_KEY) return null;
+  try {
+    const res = await fetch(
+      `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${MAPTILER_KEY}`,
+    );
+    if (!res.ok) return null;
+    const json = await res.json() as { features?: { place_name?: string }[] };
+    return json?.features?.[0]?.place_name ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function NewProjectProvider({ children }: { children: ReactNode }) {
   const { activeOrg } = useOrg();
+  const { session } = useAuth();
 
-  const [isCreating, setIsCreating] = useState(false);
+  const [step, setStep] = useState<CreateStep>("idle");
+  const [pinCoords, setPinCoords] = useState<PinCoords | null>(null);
+  const [detectedAddress, setDetectedAddress] = useState<string | null>(null);
+  const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<CustomerLocation | null>(null);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState<ZonedDateTime | null>(null);
   const [assignees, setAssignees] = useState<string[]>([]);
-  const [location, setLocation] = useState<PickedLocation | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const onProjectSavedRef = useRef<((project: Project) => void) | null>(null);
@@ -78,64 +134,142 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     onProjectSavedRef.current = cb;
   }, []);
 
-  const resetFormState = useCallback(() => {
+  const resetAll = useCallback(() => {
+    setStep("idle");
+    setPinCoords(null);
+    setDetectedAddress(null);
+    setIsGeocodingAddress(false);
+    setSelectedCustomer(null);
+    setSelectedLocation(null);
     setTitle("");
     setDescription("");
     setStartTime(null);
     setAssignees([]);
-    setLocation(null);
+    setIsWorking(false);
     setSaveError(null);
-    setIsSaving(false);
   }, []);
 
   const startCreating = useCallback(() => {
-    setIsCreating(true);
-    resetFormState();
-  }, [resetFormState]);
+    resetAll();
+    setStep("pin");
+  }, [resetAll]);
 
   const cancelCreating = useCallback(() => {
-    setIsCreating(false);
-    resetFormState();
-  }, [resetFormState]);
+    resetAll();
+  }, [resetAll]);
+
+  const pinPlaced = useCallback((coords: PinCoords) => {
+    setPinCoords(coords);
+    setStep("address");
+    setDetectedAddress(null);
+    setIsGeocodingAddress(true);
+
+    void reverseGeocode(coords.lng, coords.lat).then((address) => {
+      setDetectedAddress(address);
+      setIsGeocodingAddress(false);
+    });
+  }, []);
+
+  const confirmAddress = useCallback(() => {
+    setStep("customer");
+  }, []);
+
+  const goBackToPin = useCallback(() => {
+    setDetectedAddress(null);
+    setPinCoords(null);
+    setStep("pin");
+  }, []);
+
+  const selectCustomer = useCallback((customer: Customer) => {
+    setSelectedCustomer(customer);
+    setSelectedLocation(null);
+    setStep("location");
+  }, []);
+
+  const createAndSelectCustomer = useCallback(async (name: string) => {
+    setIsWorking(true);
+    const { data, error } = await createCustomer({
+      name,
+      organization_id: activeOrg?.organization_id ?? null,
+    });
+    setIsWorking(false);
+    if (error || !data) {
+      setSaveError(error ?? "Failed to create customer");
+      return;
+    }
+    setSelectedCustomer(data);
+    setSelectedLocation(null);
+    setStep("location");
+  }, [activeOrg]);
+
+  const selectLocation = useCallback((location: CustomerLocation) => {
+    setSelectedLocation(location);
+    setStep("details");
+  }, []);
+
+  const createAndSelectLocation = useCallback(async (name: string, address: string | null) => {
+    if (!pinCoords || !selectedCustomer) return;
+    setIsWorking(true);
+    const { data, error } = await createCustomerLocation({
+      customer_id: selectedCustomer.customer_id,
+      name,
+      address,
+      location: `POINT(${pinCoords.lng} ${pinCoords.lat})`,
+      created_by: session?.user.id ?? null,
+    });
+    setIsWorking(false);
+    if (error || !data) {
+      setSaveError(error ?? "Failed to create location");
+      return;
+    }
+    setSelectedLocation(data);
+    setStep("details");
+  }, [pinCoords, selectedCustomer, session]);
+
+  const goBackToCustomer = useCallback(() => {
+    setSelectedLocation(null);
+    setStep("customer");
+  }, []);
 
   const submitProject = useCallback(async () => {
-    if (!location) return;
-    setIsSaving(true);
+    if (!selectedCustomer || !selectedLocation) return;
+    setStep("saving");
+    setIsWorking(true);
     setSaveError(null);
-
-    const { lng, lat } = location;
-    const orgId = activeOrg?.organization_id ?? null;
-    const startTimeToSave = startTime ? startTime.toDate().toISOString() : null;
-    const descToSave = description.trim() || null;
 
     const { data: project, error } = await createProject(
       {
         title,
-        description: descToSave,
+        description: description.trim() || null,
         project_status: 0,
-        start_time: startTimeToSave,
-        location: `POINT(${lng} ${lat})`,
-        organization_id: orgId,
+        start_time: startTime ? startTime.toDate().toISOString() : null,
+        customer_id: selectedCustomer.customer_id,
+        customer_location_id: selectedLocation.customer_location_id,
+        organization_id: activeOrg?.organization_id ?? null,
       },
       assignees,
     );
 
     if (error) {
-      console.error("Failed to save project:", error);
-      setIsSaving(false);
       setSaveError(error);
+      setStep("details");
+      setIsWorking(false);
       return;
     }
 
-    setIsCreating(false);
-    resetFormState();
+    resetAll();
     if (project) onProjectSavedRef.current?.(project);
-  }, [location, activeOrg, startTime, title, description, assignees, resetFormState]);
+  }, [selectedCustomer, selectedLocation, title, description, startTime, assignees, activeOrg, resetAll]);
 
   return (
     <NewProjectContext.Provider
       value={{
-        isCreating,
+        step,
+        pinCoords,
+        detectedAddress,
+        isGeocodingAddress,
+        selectedCustomer,
+        selectedLocation,
         title,
         setTitle,
         description,
@@ -144,12 +278,18 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         setStartTime,
         assignees,
         setAssignees,
-        location,
-        setLocation,
-        isSaving,
+        isWorking,
         saveError,
         startCreating,
         cancelCreating,
+        pinPlaced,
+        confirmAddress,
+        goBackToPin,
+        selectCustomer,
+        createAndSelectCustomer,
+        selectLocation,
+        createAndSelectLocation,
+        goBackToCustomer,
         submitProject,
         setOnProjectSaved,
       }}

@@ -15,8 +15,9 @@ import { useOrg } from "@/context/OrgContext";
 import { useNewProject } from "@/context/NewProjectContext";
 import { useProjectMarkers } from "@/hooks/useProjectMarkers";
 import { useLocationPicker } from "@/hooks/useLocationPicker";
-import CreateProjectForm from "@/components/project/CreateProjectForm";
+import CreateProjectPanel from "@/components/project/CreateProjectPanel";
 import ProjectDetailsPanel from "@/components/project/ProjectDetailsPanel";
+import ProjectStackPanel from "@/components/project/ProjectStackPanel";
 import ProjectFilters from "@/components/project/ProjectFilters";
 import { useLocale } from "@/context/LocaleContext";
 
@@ -62,12 +63,13 @@ export default function MapView() {
   const openDrawerRef = useRef(openDrawer);
   useEffect(() => { openDrawerRef.current = openDrawer; }, [openDrawer]);
 
-  const handleProjectClickRef = useRef((project: Project) => {
-    markers.selectedProjectIdRef.current = project.project_id;
+  const handleProjectGroupClickRef = useRef((projects: Project[]) => {
+    const first = projects[0];
+    markers.selectedProjectIdRef.current = first.project_id;
     markers.applySelection();
 
-    if (window.innerWidth < 768 && project.location?.coordinates && mapRef.current) {
-      const [lng, lat] = project.location.coordinates;
+    if (window.innerWidth < 768 && first.customer_location?.location?.coordinates && mapRef.current) {
+      const [lng, lat] = first.customer_location.location.coordinates;
       mapRef.current.easeTo({
         center: [lng, lat],
         offset: [0, -window.innerHeight * 0.2],
@@ -75,34 +77,50 @@ export default function MapView() {
       });
     }
 
-    openDrawerRef.current(<ProjectDetailsPanel project={project} onProjectUpdated={(updated) => {
+    const onProjectUpdated = (updated: Project) => {
       if (mapRef.current) {
         markers.removeProjectMarker(updated.project_id);
         markers.addProjectMarker(mapRef.current, updated);
         markers.applySelection();
       }
-    }} />, {
+    };
+
+    const drawerOptions = {
       title: t("projectDetails.title"),
       backdrop: false,
       onClose: () => {
         markers.selectedProjectIdRef.current = null;
         markers.applySelection();
       },
-    });
+    };
+
+    if (projects.length === 1) {
+      openDrawerRef.current(
+        <ProjectDetailsPanel project={first} onProjectUpdated={onProjectUpdated} />,
+        drawerOptions,
+      );
+    } else {
+      openDrawerRef.current(
+        <ProjectStackPanel projects={projects} onProjectUpdated={onProjectUpdated} />,
+        drawerOptions,
+      );
+    }
   });
 
-  const markers = useProjectMarkers(handleProjectClickRef);
+  const markers = useProjectMarkers(handleProjectGroupClickRef);
 
   const {
-    isCreating,
-    location: pickedLocation,
-    setLocation,
+    step,
+    pinPlaced,
     startCreating,
     cancelCreating,
     setOnProjectSaved,
   } = useNewProject();
 
-  const tempMarkerRef = useLocationPicker(mapRef, isCreating, setLocation, null);
+  const isInPinMode = step === "pin";
+  const isCreating = step !== "idle";
+
+  const tempMarkerRef = useLocationPicker(mapRef, isInPinMode, pinPlaced, null, false);
 
   useEffect(() => {
     setOnProjectSaved((project: Project) => {
@@ -116,9 +134,17 @@ export default function MapView() {
     return () => setOnProjectSaved(null);
   }, [setOnProjectSaved, closeDrawer, markers, tempMarkerRef]);
 
+  // Remove temp marker when creation is cancelled or completed (step → idle)
+  useEffect(() => {
+    if (step === "idle") {
+      tempMarkerRef.current?.remove();
+      tempMarkerRef.current = null;
+    }
+  }, [step, tempMarkerRef]);
+
   const handleAddClick = useCallback(() => {
     startCreating();
-    openDrawer(<CreateProjectForm />, { onClose: cancelCreating, backdrop: false, title: t("createProject.titlePlaceholder") });
+    openDrawer(<CreateProjectPanel />, { onClose: cancelCreating, backdrop: false, title: t("createProjectWizard.drawerTitle") });
   }, [startCreating, openDrawer, cancelCreating, t]);
 
   // Map initialisation
@@ -279,8 +305,8 @@ export default function MapView() {
         </Button>
       )}
 
-      {/* Map hint — nudge the user to click the map when no location is set yet */}
-      {isCreating && !pickedLocation && (
+      {/* Map hint — nudge the user to click the map when in pin placement mode */}
+      {step === "pin" && (
         <div className="pointer-events-none absolute bottom-8 left-1/2 -translate-x-1/2 rounded-xl bg-gray-900/80 px-4 py-2.5 shadow-lg backdrop-blur-sm">
           <span className="text-sm text-white">{t("map.tapToSetLocation")}</span>
         </div>
