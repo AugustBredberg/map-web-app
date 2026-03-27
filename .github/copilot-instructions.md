@@ -56,15 +56,6 @@ A **map-first job management tool** that replaces all of that. The map is the ce
 
 **Teams** — groups of installers. A project can be assigned to a team or individual members.
 
-### Map Status Colors
-
-| Color | Status |
-|---|---|
-| 🟡 Yellow | Lead / New |
-| 🟠 Orange | Planned / Signed |
-| 🔵 Blue | In Progress |
-| ⚫ Black | Done |
-
 ### Key Design Principles
 
 - The **map is the primary navigation surface** for admins
