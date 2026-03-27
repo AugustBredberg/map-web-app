@@ -30,5 +30,5 @@ These are injected as Cursor Cloud secrets. When creating `.env.local`, map `NEX
 - Protected routes (`/map`, `/projects`, `/financial`, `/settings`) redirect to `/login` when unauthenticated. To test these pages, a valid Supabase account is required.
 - Tests are fully self-contained — they use a mock Supabase client (`src/lib/__tests__/mockClient.ts`) and dummy env vars set in `vitest.config.ts`. No running Supabase instance is needed for tests.
 - The `.env.local` file is git-ignored and must be recreated each session from injected secrets.
-- The test login credentials (`TEST_LOGIN_USERNAME` / `TEST_LOGIN_PASSWORD`) returned "Invalid login credentials" as of March 2026. The account may need to be created or the password corrected in the Supabase dashboard before authenticated routes can be tested manually.
+- Test login uses `TEST_LOGIN_USERNAME` / `TEST_LOGIN_PASSWORD` secrets. Use these exact values when logging in via the browser — previous sessions may leave stale autocomplete values in form fields.
 - Signup requires email confirmation (Supabase sends a verification email), so creating a new account from the agent is not possible without access to the email inbox.
