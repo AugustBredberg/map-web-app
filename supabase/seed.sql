@@ -1,0 +1,2 @@
+-- Seed data for local development only.
+-- Keep this file idempotent where possible.
