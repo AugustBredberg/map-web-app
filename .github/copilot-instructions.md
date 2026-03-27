@@ -1,5 +1,78 @@
 # Project Guidelines
 
+## Product Overview
+
+This app is a **SaaS field management platform** for installation companies. It is designed for businesses whose work is geographically spread out — such as companies installing solar panels, EV chargers, fiber optic cables, or heat pumps — where a manager coordinates multiple installers/workers who travel between several job sites per day.
+
+### The Problem
+
+Installation companies currently rely on a fragmented mix of Excel spreadsheets, WhatsApp, paper notes, and Google Maps to manage their work. This leads to:
+
+- No single source of truth for where jobs are and who is doing them
+- Managers have no real-time geographic overview of ongoing and upcoming work
+- Installers don't have a clear, structured view of their day
+- Photo documentation ends up scattered across chat apps
+- Rework and missed jobs from miscommunication
+
+### The Solution
+
+A **map-first job management tool** that replaces all of that. The map is the central UI: every job is a pin on the map with a visible status. Managers plan and assign from the map; installers see their day as an ordered list and document their work directly in the app.
+
+### User Roles
+
+**Admin / Manager ("Installationschefen")**
+- Lands directly on the map when opening the app
+- Creates new jobs by clicking on the map or searching an address
+- Assigns installers/teams to jobs
+- Sees all jobs as pins color-coded by status
+- Has a day-planning panel (sidebar on desktop, bottom sheet on mobile) showing all jobs ordered by start time with assignees and status
+- Can filter the map by status, assignee, or date range
+- Reviews submitted hours, expenses, and photo documentation
+
+**Installer / Worker ("Installatören")**
+- Opens the app and lands on **"My jobs today"** — a list of their assigned jobs for the day ordered by start time
+- Taps a job to see the address, description, and contact person
+- Can navigate to the job (via Google Maps or similar), start the job, upload photos (before/during/after) with optional comments, log worked hours and expenses, and mark the job as complete
+- After completing a job, is guided to the next one
+
+### Core Domain Concepts
+
+**Project / Job** — the central entity. Has:
+- Title and description
+- Address + geographic coordinates (stored as PostGIS geometry)
+- Status: `Lead → Quote → Signed → Planned → In Progress → Done → Billing`
+- Assigned installers (one or more)
+- Start time and estimated hours
+- Worked hours (logged by installers)
+- Expenses (title, reason, cost, who submitted it, timestamp)
+- Photo attachments (before/during/after with optional comments)
+- Presented price, agreed price, final price
+
+**Organization** — the company using the platform. Users belong to an organization.
+
+**Users / Members** — have one of two org-level roles:
+- `admin` — full access: create/edit/delete jobs, assign team members, view all data
+- `member` — restricted access: see and act on their own assigned jobs only
+
+**Teams** — groups of installers. A project can be assigned to a team or individual members.
+
+### Map Status Colors
+
+| Color | Status |
+|---|---|
+| 🟡 Yellow | Lead / New |
+| 🟠 Orange | Planned / Signed |
+| 🔵 Blue | In Progress |
+| ⚫ Black | Done |
+
+### Key Design Principles
+
+- The **map is the primary navigation surface** for admins
+- **Installers should never have to think about planning** — their UI answers "What do I do now?"
+- The app must **replace Excel and WhatsApp entirely** — not add to the tool stack
+- Mobile-first for installers; desktop-optimized for admins
+- Photo documentation is first-class: before/during/after images are attached directly to the job
+
 ## Tech Stack
 
 - **Next.js 16** (App Router) with **React 19** and **TypeScript**
