@@ -169,116 +169,117 @@ create table if not exists public.project_time_log_entries (
     unique (project_id, user_id, date)
 );
 
-create or replace function public.accept_invitation_by_token(p_token uuid, p_display_name text)
-returns void
-language plpgsql
-security definer
-set search_path = 'public'
-as $function$
-declare
+set check_function_bodies = off;
+
+CREATE OR REPLACE FUNCTION public.accept_invitation_by_token(p_token uuid, p_display_name text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
   v_inv record;
-begin
-  select id, organization_id
-  into v_inv
-  from organization_invitations
-  where token = p_token
-    and accepted_at is null
-    and (expires_at is null or expires_at > now())
-  for update;
+BEGIN
+  -- Fetch the pending invitation, locking the row
+  SELECT id, organization_id
+  INTO v_inv
+  FROM organization_invitations
+  WHERE token = p_token
+    AND accepted_at IS NULL
+    AND (expires_at IS NULL OR expires_at > now())
+  FOR UPDATE;
 
-  if not found then
-    raise exception 'Invitation not found or already used';
-  end if;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Invitation not found or already used';
+  END IF;
 
-  if not exists (
-    select 1
-    from organization_invitations
-    where id = v_inv.id
-      and invitee_email = auth.email()
-  ) then
-    raise exception 'Invitation does not match your account';
-  end if;
+  -- Verify the invitation belongs to the calling user's email
+  IF NOT EXISTS (
+    SELECT 1 FROM organization_invitations
+    WHERE id = v_inv.id
+      AND invitee_email = auth.email()
+  ) THEN
+    RAISE EXCEPTION 'Invitation does not match your account';
+  END IF;
 
-  insert into organization_members (organization_id, user_id, role, display_name)
-  values (v_inv.organization_id, auth.uid(), 'member', p_display_name)
-  on conflict (organization_id, user_id) do nothing;
+  -- Add to org (ignore if already a member)
+  INSERT INTO organization_members (organization_id, user_id, role, display_name)
+  VALUES (v_inv.organization_id, auth.uid(), 'member', p_display_name)
+  ON CONFLICT (organization_id, user_id) DO NOTHING;
 
-  delete from organization_invitations where id = v_inv.id;
-end;
-$function$;
+  -- Delete the invitation
+  DELETE FROM organization_invitations WHERE id = v_inv.id;
+END;
+$function$
+;
 
-create or replace function public.get_invitation_by_token(p_token uuid)
-returns table (
-  id bigint,
-  organization_id uuid,
-  organization_name text,
-  invitee_email text,
-  expires_at timestamp with time zone,
-  accepted_at timestamp with time zone
-)
-language sql
-security definer
-set search_path = 'public'
-as $function$
-  select
+CREATE OR REPLACE FUNCTION public.get_invitation_by_token(p_token uuid)
+ RETURNS TABLE(id bigint, organization_id uuid, organization_name text, invitee_email text, expires_at timestamp with time zone, accepted_at timestamp with time zone)
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT
     i.id,
     i.organization_id,
-    o.name as organization_name,
+    o.name AS organization_name,
     i.invitee_email,
     i.expires_at,
     i.accepted_at
-  from organization_invitations i
-  join organizations o using (organization_id)
-  where i.token = p_token
-    and i.accepted_at is null
-  limit 1;
-$function$;
+  FROM organization_invitations i
+  JOIN organizations o USING (organization_id)
+  WHERE i.token = p_token
+    AND i.accepted_at IS NULL
+  LIMIT 1;
+$function$
+;
 
-create or replace function public.get_my_org_ids()
-returns setof uuid
-language sql
-stable
-security definer
-as $function$
-  select organization_id from organization_members where user_id = auth.uid();
-$function$;
+CREATE OR REPLACE FUNCTION public.get_my_org_ids()
+ RETURNS SETOF uuid
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+AS $function$
+  SELECT organization_id FROM organization_members WHERE user_id = auth.uid();
+$function$
+;
 
-create or replace function public.is_assigned_to_project(p_project_id uuid)
-returns boolean
-language sql
-stable
-security definer
-as $function$
-  select exists (
-    select 1
-    from project_assignees
-    where project_id = p_project_id
-      and user_id = auth.uid()
+CREATE OR REPLACE FUNCTION public.is_assigned_to_project(p_project_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM project_assignees
+    WHERE project_id = p_project_id
+      AND user_id = auth.uid()
   );
-$function$;
+$function$
+;
 
-create or replace function public.is_org_admin_for_project(p_project_id uuid)
-returns boolean
-language sql
-stable
-security definer
-as $function$
-  select exists (
-    select 1
-    from projects p
-    join organization_members om
-      on om.organization_id = p.organization_id
-     and om.user_id = auth.uid()
-     and om.role = 'admin'
-    where p.project_id = p_project_id
+CREATE OR REPLACE FUNCTION public.is_org_admin_for_project(p_project_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM projects p
+    JOIN organization_members om
+      ON om.organization_id = p.organization_id
+     AND om.user_id = auth.uid()
+     AND om.role = 'admin'
+    WHERE p.project_id = p_project_id
   );
-$function$;
+$function$
+;
 
-create or replace function public.log_project_status_change()
-returns trigger
-language plpgsql
-as $function$
+CREATE OR REPLACE FUNCTION public.log_project_status_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
 begin
+  -- Only log when status actually changes
   if new.project_status is distinct from old.project_status then
     insert into project_status_history (
       project_status_history_id,
@@ -300,44 +301,45 @@ begin
 
   return new;
 end;
-$function$;
+$function$
+;
 
-create or replace function public.user_is_admin_in_organization(given_user_id uuid, given_organization_id uuid)
-returns boolean
-language plpgsql
-stable
-as $function$
-begin
-  return exists (
-    select 1
-    from organization_members om
-    where om.organization_id = given_organization_id
-      and om.user_id = given_user_id
-      and om.role = 'admin'
+CREATE OR REPLACE FUNCTION public.user_is_admin_in_organization(given_user_id uuid, given_organization_id uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE
+AS $function$BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM organization_members om
+    WHERE om.organization_id = given_organization_id
+      AND om.user_id = given_user_id
+      AND om.role = 'admin'
   )
-  or exists (
-    select 1
-    from profiles p
-    where p.user_id = given_user_id
-      and p.system_role = 'dev'
+  OR EXISTS (
+    SELECT 1
+    FROM profiles p
+    WHERE p.user_id = given_user_id
+      AND p.system_role = 'dev'
   );
-end;
-$function$;
+END;$function$
+;
 
-create or replace function public.user_is_part_of_organization(given_user_id uuid, given_organization_id uuid)
-returns boolean
-language plpgsql
-stable
-as $function$
-begin
-  return exists (
-    select 1
-    from organization_members om
-    where om.organization_id = given_organization_id
-      and om.user_id = given_user_id
+CREATE OR REPLACE FUNCTION public.user_is_part_of_organization(given_user_id uuid, given_organization_id uuid)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE
+AS $function$BEGIN
+  RETURN EXISTS ( 
+    SELECT 1
+    FROM organization_members om
+    WHERE om.organization_id = given_organization_id
+      AND om.user_id = given_user_id
   );
-end;
-$function$;
+END;$function$
+;
+
+CREATE TRIGGER project_status_history_trigger AFTER UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION public.log_project_status_change();
 
 alter table public.customer_locations enable row level security;
 alter table public.customers enable row level security;
