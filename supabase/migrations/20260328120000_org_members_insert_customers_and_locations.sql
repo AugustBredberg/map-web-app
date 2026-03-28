@@ -2,6 +2,9 @@
 -- the create-project flow. Admins remain covered via membership; dev bypass
 -- matches user_is_admin_in_organization as used elsewhere.
 
+drop policy if exists "org members can insert customers" on public.customers;
+drop policy if exists "org members can insert customer_locations" on public.customer_locations;
+
 create policy "org members can insert customers"
 on public.customers
 as permissive

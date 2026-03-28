@@ -354,6 +354,51 @@ alter table public.project_status_history enable row level security;
 alter table public.project_time_log_entries enable row level security;
 alter table public.projects enable row level security;
 
+-- Idempotent: baseline may run against a DB that already had these policies (pre-migration prod).
+drop policy if exists "org admins can delete customer_locations" on public.customer_locations;
+drop policy if exists "org admins can insert customer_locations" on public.customer_locations;
+drop policy if exists "org admins can update customer_locations" on public.customer_locations;
+drop policy if exists "org members can view customer_locations" on public.customer_locations;
+
+drop policy if exists "org admins can delete customers" on public.customers;
+drop policy if exists "org admins can insert customers" on public.customers;
+drop policy if exists "org admins can update customers" on public.customers;
+drop policy if exists "org members can view customers" on public.customers;
+
+drop policy if exists "Admins can create invitations" on public.organization_invitations;
+drop policy if exists "Invitee can accept their own invitation" on public.organization_invitations;
+drop policy if exists "Invitees can delete their own invitations" on public.organization_invitations;
+drop policy if exists "Invitees can view their own invitations" on public.organization_invitations;
+drop policy if exists "Public can read pending invitations by token" on public.organization_invitations;
+drop policy if exists only_admins_can_invite_to_their_org on public.organization_invitations;
+
+drop policy if exists "Admins can handle members" on public.organization_members;
+drop policy if exists "Enable users to view their own data only" on public.organization_members;
+drop policy if exists "Org members can view their org members" on public.organization_members;
+drop policy if exists "Users can join via invitation" on public.organization_members;
+drop policy if exists "users can insert themselves as member" on public.organization_members;
+
+drop policy if exists "Authenticated users can view organizations" on public.organizations;
+drop policy if exists "dev users can insert organizations" on public.organizations;
+drop policy if exists "only handle my organizations" on public.organizations;
+
+drop policy if exists "Everyone can read" on public.profiles;
+
+drop policy if exists "Org members can view project assignees" on public.project_assignees;
+drop policy if exists only_assign_in_my_organization_if_admin on public.project_assignees;
+
+drop policy if exists "Users can insert history in their org" on public.project_status_history;
+drop policy if exists "Users can view project history in their organization" on public.project_status_history;
+
+drop policy if exists time_log_delete on public.project_time_log_entries;
+drop policy if exists time_log_insert on public.project_time_log_entries;
+drop policy if exists time_log_select on public.project_time_log_entries;
+drop policy if exists time_log_update on public.project_time_log_entries;
+
+drop policy if exists only_create_in_my_orgainzation on public.projects;
+drop policy if exists select_my_projects on public.projects;
+drop policy if exists update_my_projects on public.projects;
+
 create policy "org admins can delete customer_locations"
 on public.customer_locations
 as permissive
