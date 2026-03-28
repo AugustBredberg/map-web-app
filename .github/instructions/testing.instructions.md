@@ -60,3 +60,9 @@ const sampleProject = {
 npx vitest run                          # all tests
 npx vitest run src/lib/__tests__/<file> # specific file
 ```
+
+## End-to-end (Playwright)
+
+- Specs live in `e2e/`. **Unauthenticated** flows: `e2e/*.spec.ts` (run with `npm run test:e2e`).
+- **Authenticated** flows: `e2e/authenticated/*.spec.ts` run only when `E2E_LOCAL_SUPABASE=1` (use `npm run test:e2e:local`). Requires Docker, `npm run supabase:db:reset`, and `.env.e2e` from `.env.e2e.example` (including `NEXT_PUBLIC_MAPTILER_KEY`).
+- Auth setup saves storage to `playwright/.auth/` (gitignored); `e2e/auth.setup.ts` logs in as `dev@seed.kartapp.test` (see `supabase/seed.sql`).
