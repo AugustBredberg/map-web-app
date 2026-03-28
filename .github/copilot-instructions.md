@@ -70,7 +70,18 @@ A **map-first job management tool** that replaces all of that. The map is the ce
 - **HeroUI** (`@heroui/react`) for UI components, built on **Tailwind CSS 4**
 - **Supabase** for database (PostgreSQL + PostGIS), auth, and realtime
 - **MapLibre GL** with MapTiler tiles for map rendering
-- **Vitest** for unit testing
+- **Vitest** for unit testing; **Playwright** for E2E (`e2e/`)
+
+## Agent workflow (implementing features)
+
+1. Receive the prompt.
+2. Implement the change (focused diff, match repo conventions).
+3. Run **local Supabase**: `npm run supabase:start` (Docker). Check `npm run supabase:status` if services fail.
+4. Apply **migrations + seed**: `npm run supabase:db:reset` (runs `supabase/migrations` and `supabase/seed.sql`).
+5. Run **all checks**: `npm test`, `npm run lint`, `npm run test:e2e` (unauthenticated only), and for signed-in flows copy `.env.e2e.example` → `.env.e2e`, set `NEXT_PUBLIC_MAPTILER_KEY`, then `npm run test:e2e:local`.
+6. If anything fails, fix and repeat from step 3 (or 5) until green.
+
+**Seeded local users** (password `LocalDev_Seed_2026!`): `dev@seed.kartapp.test` (dev / all orgs), `admin@seed.kartapp.test`, `installer@seed.kartapp.test` — see `supabase/seed.sql` and `AGENTS.md`.
 
 ## Project Structure
 
@@ -95,8 +106,12 @@ A **map-first job management tool** that replaces all of that. The map is the ce
 - `npm run dev` — Start development server
 - `npm run build` — Build for production
 - `npm run lint` — Run ESLint
-- `npx vitest run` — Run all tests
-- `npx vitest run src/lib/__tests__/<file>` — Run specific test file
+- `npm test` / `npx vitest run` — Unit tests (mocked Supabase)
+- `npx vitest run src/lib/__tests__/<file>` — Single unit test file
+- `npm run supabase:start` / `supabase:stop` / `supabase:status` — Local Supabase (Docker)
+- `npm run supabase:db:reset` — Migrations + `supabase/seed.sql`
+- `npm run test:e2e` — Playwright without authenticated specs (no local DB required)
+- `npm run test:e2e:local` — Playwright including `e2e/authenticated/` (`E2E_LOCAL_SUPABASE=1`; needs local Supabase, seed, `.env.e2e` — see `.env.e2e.example`)
 
 ## Localization (i18n)
 
