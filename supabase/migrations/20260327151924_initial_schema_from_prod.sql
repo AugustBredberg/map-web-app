@@ -339,7 +339,9 @@ AS $function$BEGIN
 END;$function$
 ;
 
-CREATE TRIGGER project_status_history_trigger AFTER UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION public.log_project_status_change();
+-- Idempotent: prod may already have this trigger from pre-migration setup.
+drop trigger if exists project_status_history_trigger on public.projects;
+create trigger project_status_history_trigger after update on public.projects for each row execute function public.log_project_status_change();
 
 alter table public.customer_locations enable row level security;
 alter table public.customers enable row level security;
