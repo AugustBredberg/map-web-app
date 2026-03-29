@@ -7,7 +7,20 @@ const config: Config = {
     "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: "class",
-  plugins: [heroui()],
+  plugins: [
+    heroui({
+      themes: {
+        light: {
+          colors: {
+            primary: {
+              DEFAULT: "#1d4ed8",
+              foreground: "#ffffff",
+            },
+          },
+        },
+      },
+    }),
+  ],
 };
 
 export default config;

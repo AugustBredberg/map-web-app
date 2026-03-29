@@ -6,7 +6,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard>
       <NavMenu>
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-background">
           {children}
         </main>
       </NavMenu>

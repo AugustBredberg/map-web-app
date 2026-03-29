@@ -160,7 +160,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
             className={`flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${collapsed ? "justify-center" : ""} ${
               pathname.startsWith(settingsItem.href)
                 ? "bg-sidebar-active text-white"
-                : "text-sidebar-fg/70 hover:bg-sidebar-hover hover:text-sidebar-fg"
+                : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-fg"
             }`}
             aria-current={pathname.startsWith(settingsItem.href) ? "page" : undefined}
           >

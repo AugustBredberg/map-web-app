@@ -14,32 +14,36 @@
 
 /* ============================================================
    Theme tokens — light (default)
+   Canvas → sidebar → white surfaces so panels/cards read as layered.
+   Primary is slightly deeper than blue-600 so it sits better on white.
    ============================================================ */
 :root {
-  /* Page surfaces */
-  --background: #ffffff;
-  --surface: #F4F4F4;
+  /* Page canvas (list gutters, empty areas behind columns) */
+  --background: #e8eaef;
+
+  /* Cards, detail pane, filter column — reads “above” the canvas */
+  --surface: #ffffff;
 
   /* Typography */
-  --foreground: #353535;
-  --muted: #6b7280;
-  --muted-bg: #f3f4f6;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --muted-bg: #eceef2;
 
-  /* Borders */
-  --border: #989898;
+  /* Borders — soft; rely on surface/background contrast for structure */
+  --border: #cbd5e1;
 
-  /* Selection highlight */
-  --selected: #e3e3e3;
+  /* Selection / list highlight */
+  --selected: #dbeafe;
 
-  /* Sidebar */
-  --sidebar-bg: #F4F4F4;
-  --sidebar-fg: #111827;
-  --sidebar-muted: #6b7280;
-  --sidebar-active: #2563eb;
-  --sidebar-hover: #e3e3e3;
+  /* Sidebar rail — darker than canvas for separation */
+  --sidebar-bg: #ffffff;
+  --sidebar-fg: #0f172a;
+  --sidebar-muted: #475569;
+  --sidebar-active: #1d4ed8;
+  --sidebar-hover: #cfd6e0;
 
-  /* Brand */
-  --primary: #2563eb;
+  /* Brand (aligned with HeroUI light primary override in tailwind.config.ts) */
+  --primary: #1d4ed8;
   --primary-fg: #ffffff;
   --secondary: #7c3aed;
   --secondary-fg: #ffffff;
