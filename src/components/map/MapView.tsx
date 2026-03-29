@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useCallback, useState } from "react";
+import type { PinCoords } from "@/context/NewProjectContext";
 import { useTheme } from "next-themes";
 import { Button } from "@heroui/react";
 import maplibregl from "maplibre-gl";
@@ -35,6 +36,7 @@ export default function MapView() {
   const { activeRole, activeOrg } = useOrg();
   const { t } = useLocale();
   const mapReadyRef = useRef(false);
+  const [mapLoadTick, setMapLoadTick] = useState(0);
 
   // Filter state
   const [members, setMembers] = useState<OrganizationMember[]>([]);
@@ -118,7 +120,9 @@ export default function MapView() {
 
   const {
     step,
+    pinCoords,
     pinPlaced,
+    registerPlacePinOnMap,
     startCreating,
     cancelCreating,
     setOnProjectSaved,
@@ -127,7 +131,26 @@ export default function MapView() {
   const isInPinMode = step === "pin";
   const isCreating = step !== "idle";
 
-  const tempMarkerRef = useLocationPicker(mapRef, isInPinMode, pinPlaced, null, false);
+  const { tempMarkerRef, placePinOnMap } = useLocationPicker(mapRef, isInPinMode, pinPlaced, null, false);
+
+  /** Always forward to the latest placePinOnMap so context never calls a stale fn or hits register(null) churn. */
+  const placePinOnMapRef = useRef(placePinOnMap);
+  placePinOnMapRef.current = placePinOnMap;
+
+  useLayoutEffect(() => {
+    const stable = (coords: PinCoords) => {
+      placePinOnMapRef.current(coords);
+    };
+    registerPlacePinOnMap(stable);
+    return () => registerPlacePinOnMap(null);
+  }, [registerPlacePinOnMap]);
+
+  // Ensure temp marker + pan after address search (and if imperative path missed map readiness).
+  useEffect(() => {
+    if (step !== "address" || !pinCoords) return;
+    if (!mapRef.current) return;
+    placePinOnMapRef.current(pinCoords);
+  }, [step, pinCoords, mapLoadTick]);
 
   useEffect(() => {
     setOnProjectSaved((project: Project) => {
@@ -180,6 +203,7 @@ export default function MapView() {
 
     map.once("load", () => {
       mapReadyRef.current = true;
+      setMapLoadTick((n) => n + 1);
     });
 
     return () => {

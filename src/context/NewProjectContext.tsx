@@ -58,6 +58,10 @@ interface NewProjectContextValue {
   startCreating: () => void;
   cancelCreating: () => void;
   pinPlaced: (coords: PinCoords) => void;
+  /** Map sets the orange pin + pans; context stores coords and address from the search hit. */
+  pinPlacedFromSearch: (coords: PinCoords, placeName: string) => void;
+  /** Registered by MapView so address search can sync the temp marker without a map click. */
+  registerPlacePinOnMap: (fn: ((coords: PinCoords) => void) | null) => void;
   confirmAddress: () => void;
   goBackToPin: () => void;
   selectCustomer: (customer: Customer) => void;
@@ -90,6 +94,8 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   startCreating: () => {},
   cancelCreating: () => {},
   pinPlaced: () => {},
+  pinPlacedFromSearch: () => {},
+  registerPlacePinOnMap: () => {},
   confirmAddress: () => {},
   goBackToPin: () => {},
   selectCustomer: () => {},
@@ -136,6 +142,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const onProjectSavedRef = useRef<((project: Project) => void) | null>(null);
+  const placePinOnMapRef = useRef<((coords: PinCoords) => void) | null>(null);
 
   const setOnProjectSaved = useCallback((cb: ((project: Project) => void) | null) => {
     onProjectSavedRef.current = cb;
@@ -165,6 +172,10 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     resetAll();
   }, [resetAll]);
 
+  const registerPlacePinOnMap = useCallback((fn: ((coords: PinCoords) => void) | null) => {
+    placePinOnMapRef.current = fn;
+  }, []);
+
   const pinPlaced = useCallback((coords: PinCoords) => {
     setPinCoords(coords);
     setStep("address");
@@ -175,6 +186,14 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
       setDetectedAddress(address);
       setIsGeocodingAddress(false);
     });
+  }, []);
+
+  const pinPlacedFromSearch = useCallback((coords: PinCoords, placeName: string) => {
+    placePinOnMapRef.current?.(coords);
+    setPinCoords(coords);
+    setStep("address");
+    setDetectedAddress(placeName);
+    setIsGeocodingAddress(false);
   }, []);
 
   const confirmAddress = useCallback(() => {
@@ -293,6 +312,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         startCreating,
         cancelCreating,
         pinPlaced,
+        pinPlacedFromSearch,
+        registerPlacePinOnMap,
         confirmAddress,
         goBackToPin,
         selectCustomer,

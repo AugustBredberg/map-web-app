@@ -72,6 +72,10 @@ export const translations = {
     },
     createProjectWizard: {
       drawerTitle: "Create Project",
+      stepPinTitle: "Search address",
+      stepPinHint: "Or tap the map to place the pin.",
+      searchAddressPlaceholder: "Type or paste an address\u2026",
+      searchAddressUnavailable: "Address search is not configured.",
       stepAddress: "Location",
       detectedAddress: "Detected address",
       confirmAddress: "Confirm",
@@ -423,6 +427,10 @@ export const translations = {
     },
     createProjectWizard: {
       drawerTitle: "Skapa projekt",
+      stepPinTitle: "S\u00f6k adress",
+      stepPinHint: "Eller tryck p\u00e5 kartan f\u00f6r att s\u00e4tta n\u00e5len.",
+      searchAddressPlaceholder: "Skriv eller klistra in en adress\u2026",
+      searchAddressUnavailable: "Adresss\u00f6k \u00e4r inte konfigurerat.",
       stepAddress: "Plats",
       detectedAddress: "Detekterad adress",
       confirmAddress: "Bekr\u00e4fta",

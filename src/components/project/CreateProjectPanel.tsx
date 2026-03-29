@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Button,
   Input,
@@ -19,6 +20,11 @@ import { fetchLocationsForCustomer } from "@/lib/customerLocations";
 import type { Customer, CustomerLocation, OrganizationMember } from "@/lib/supabase";
 import { getOrgMembers } from "@/lib/members";
 import { useLocale } from "@/context/LocaleContext";
+import {
+  forwardGeocode,
+  isMapTilerGeocodingAvailable,
+  type ForwardGeocodeHit,
+} from "@/lib/maptilerGeocoding";
 
 // ---------------------------------------------------------------------------
 // Distance helper
@@ -70,6 +76,180 @@ function SummaryRow({
           {t("createProjectWizard.change")}
         </button>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Step: Pin — search address or tap map
+// ---------------------------------------------------------------------------
+
+function StepPin() {
+  const { pinPlacedFromSearch } = useNewProject();
+  const { locale, t } = useLocale();
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<ForwardGeocodeHit[]>([]);
+  const [open, setOpen] = useState(false);
+  const requestIdRef = useRef(0);
+  const inputWrapRef = useRef<HTMLDivElement>(null);
+  const [menuLayout, setMenuLayout] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
+  const searchEnabled = isMapTilerGeocodingAvailable();
+
+  const repositionMenu = useCallback(() => {
+    if (!open || suggestions.length === 0) {
+      setMenuLayout(null);
+      return;
+    }
+    const el = inputWrapRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setMenuLayout({ top: r.bottom + 4, left: r.left, width: r.width });
+  }, [open, suggestions.length]);
+
+  const scheduleReposition = useCallback(() => {
+    requestAnimationFrame(() => {
+      repositionMenu();
+    });
+  }, [repositionMenu]);
+
+  useLayoutEffect(() => {
+    scheduleReposition();
+  }, [scheduleReposition, suggestions, query]);
+
+  useEffect(() => {
+    if (!open || suggestions.length === 0) return;
+    scheduleReposition();
+    const el = inputWrapRef.current;
+    const ro = el ? new ResizeObserver(() => scheduleReposition()) : null;
+    if (el && ro) ro.observe(el);
+    window.addEventListener("resize", scheduleReposition);
+    window.addEventListener("scroll", scheduleReposition, true);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", scheduleReposition);
+      window.removeEventListener("scroll", scheduleReposition, true);
+    };
+  }, [open, suggestions.length, scheduleReposition]);
+
+  useEffect(() => {
+    const myId = ++requestIdRef.current;
+    const q = query.trim();
+    if (!searchEnabled || q.length < 2) return;
+
+    const timer = setTimeout(() => {
+      void forwardGeocode(q, { language: locale, limit: 8 })
+        .then((hits) => {
+          if (myId !== requestIdRef.current) return;
+          setSuggestions(hits);
+          setOpen(hits.length > 0);
+        })
+        .catch(() => {
+          if (myId !== requestIdRef.current) return;
+          setSuggestions([]);
+          setOpen(false);
+        })
+        .finally(() => {
+          if (myId !== requestIdRef.current) return;
+          setLoading(false);
+        });
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [query, locale, searchEnabled]);
+
+  const pickHit = useCallback(
+    (hit: ForwardGeocodeHit) => {
+      pinPlacedFromSearch({ lng: hit.lng, lat: hit.lat }, hit.placeName);
+      setQuery(hit.placeName);
+      setSuggestions([]);
+      setOpen(false);
+      setLoading(false);
+    },
+    [pinPlacedFromSearch],
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+          {t("createProjectWizard.stepPinTitle")}
+        </p>
+        {searchEnabled ? (
+          <div className="relative" ref={inputWrapRef}>
+            <Input
+              placeholder={t("createProjectWizard.searchAddressPlaceholder")}
+              value={query}
+              onValueChange={(v) => {
+                setQuery(v);
+                const t = v.trim();
+                if (t.length < 2) {
+                  setSuggestions([]);
+                  setLoading(false);
+                  setOpen(false);
+                } else {
+                  setLoading(true);
+                }
+              }}
+              onFocus={() => {
+                if (suggestions.length > 0) setOpen(true);
+              }}
+              variant="bordered"
+              size="sm"
+              autoComplete="off"
+              aria-autocomplete="list"
+              aria-expanded={open}
+              endContent={loading ? <Spinner size="sm" /> : undefined}
+              startContent={
+                <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              }
+            />
+            {typeof document !== "undefined" &&
+              open &&
+              suggestions.length > 0 &&
+              menuLayout &&
+              createPortal(
+                <ul
+                  role="listbox"
+                  style={{
+                    position: "fixed",
+                    top: menuLayout.top,
+                    left: menuLayout.left,
+                    width: menuLayout.width,
+                    zIndex: 100,
+                  }}
+                  className="max-h-56 overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg"
+                >
+                  {suggestions.map((hit, i) => (
+                    <li key={`${hit.lng},${hit.lat},${i}`}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={false}
+                        className="w-full px-3 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-selected"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          pickHit(hit);
+                        }}
+                      >
+                        {hit.placeName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>,
+                document.body,
+              )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted">{t("createProjectWizard.searchAddressUnavailable")}</p>
+        )}
+        <p className="mt-2 text-xs text-muted">{t("createProjectWizard.stepPinHint")}</p>
+      </div>
     </div>
   );
 }
@@ -696,6 +876,7 @@ export default function CreateProjectPanel() {
   return (
     <div className="flex flex-col gap-4 pb-4">
       {/* Step content */}
+      {step === "pin" && <StepPin />}
       {step === "address" && <StepAddress />}
       {step === "customer" && <StepCustomer />}
       {step === "location" && <StepLocation />}

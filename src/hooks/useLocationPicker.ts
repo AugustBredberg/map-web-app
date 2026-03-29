@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MutableRefObject } from "react";
+import { useEffect, useRef, useCallback, type MutableRefObject } from "react";
 import maplibregl from "maplibre-gl";
 import type { PinCoords } from "@/context/NewProjectContext";
 
@@ -10,6 +10,29 @@ export function useLocationPicker(
   cleanupOnDeactivate = true,
 ) {
   const tempMarkerRef = useRef<maplibregl.Marker | null>(null);
+
+  /** Place or move the temp pin and pan the map (e.g. after address search). */
+  const placePinOnMap = useCallback(
+    (coords: PinCoords) => {
+      const map = mapRef.current;
+      if (!map) return;
+      const { lng, lat } = coords;
+      if (tempMarkerRef.current) {
+        tempMarkerRef.current.setLngLat([lng, lat]);
+      } else {
+        const marker = new maplibregl.Marker({ color: "#f59e0b" });
+        marker.getElement().classList.add("temp-pin");
+        marker.setLngLat([lng, lat]).addTo(map);
+        tempMarkerRef.current = marker;
+      }
+      map.easeTo({
+        center: [lng, lat],
+        zoom: Math.max(map.getZoom(), 16),
+        duration: 550,
+      });
+    },
+    [mapRef],
+  );
 
   // Crosshair cursor + click handler while the user is picking a location
   useEffect(() => {
@@ -57,5 +80,5 @@ export function useLocationPicker(
     }
   }, [isActive, cleanupOnDeactivate]);
 
-  return tempMarkerRef;
+  return { tempMarkerRef, placePinOnMap };
 }
