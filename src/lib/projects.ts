@@ -4,7 +4,7 @@ import type { Project } from "@/lib/supabase";
 type DbClient = typeof supabase;
 
 const PROJECT_FIELDS =
-  "project_id, created_at, updated_at, created_by, organization_id, title, description, project_status, start_time, customer_id, customer_location_id, customer_location:customer_locations!customer_location_id(name, address, location)";
+  "project_id, created_at, updated_at, created_by, organization_id, title, description, project_status, start_time, customer_id, customer_location_id, customer:customers!customer_id(name, phone, email), customer_location:customer_locations!customer_location_id(name, address, location)";
 
 // ---------------------------------------------------------------------------
 // Fetch

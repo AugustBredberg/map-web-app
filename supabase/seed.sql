@@ -277,6 +277,13 @@ insert into public.project_assignees (
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
   );
 
+insert into public.project_comments (project_id, body, created_by) values
+  (
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+    'Ring kunden cirka 10 minuter innan ankomst.',
+    '11111111-1111-1111-1111-111111111111'
+  );
+
 -- Keep auto-generated IDs from colliding with seeded bigint keys.
 select setval(
   'public.customers_customer_id_seq',

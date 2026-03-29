@@ -39,6 +39,12 @@ export type CustomerLocation = {
   created_at: string;
 };
 
+export type ProjectCustomer = {
+  name: string;
+  phone: string | null;
+  email: string | null;
+};
+
 export type Project = {
   project_id: string;
   organization_id: string | null;
@@ -51,6 +57,8 @@ export type Project = {
   description: string | null;
   customer_id: string | null;
   customer_location_id: string | null;
+  /** Joined from customers for contact details in the field */
+  customer?: ProjectCustomer | ProjectCustomer[] | null;
   // Joined from customer_locations for map display
   customer_location: {
     name: string;
