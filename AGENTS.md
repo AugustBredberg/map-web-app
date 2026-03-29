@@ -52,7 +52,7 @@ Details and UUIDs live in `supabase/seed.sql`.
 ### Gotchas
 
 - Without `E2E_LOCAL_SUPABASE=1`, Playwright only runs **unauthenticated** specs (`e2e/*.spec.ts`). Tests under `e2e/authenticated/` are skipped.
-- Protected routes (`/map`, `/projects`, `/financial`, `/settings`) redirect to `/login` when unauthenticated.
+- Protected routes (`/map`, `/projects`, `/customers`, `/financial`, `/settings`) redirect to `/login` when unauthenticated.
 - Vitest does not need a running database. Playwright **with** local auth needs local Supabase and a valid `NEXT_PUBLIC_MAPTILER_KEY` so the map page can load.
 - The `.env.local` file is git-ignored; recreate from secrets or examples as needed.
 - Signup against **remote** Supabase still requires email confirmation; use **seeded local users** for automated login instead.

@@ -32,7 +32,8 @@ function StatCard({ label, value, icon, accent }: StatCardProps) {
   );
 }
 
-export default function SummaryCard(_: { period: Period }) {
+export default function SummaryCard({ period }: { period: Period }) {
+  void period;
   const { t, locale } = useLocale();
   const localeCode = LOCALE_CODE[locale] ?? "sv-SE";
 

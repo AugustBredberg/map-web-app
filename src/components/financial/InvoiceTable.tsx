@@ -60,7 +60,8 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
-export default function InvoiceTable(_: { period: Period }) {
+export default function InvoiceTable({ period }: { period: Period }) {
+  void period;
   const { t, locale } = useLocale();
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const localeCode = LOCALE_CODE[locale] ?? "sv-SE";

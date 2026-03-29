@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
  * map, projects list, financial, or settings — they are sent to login.
  */
 test.describe("Protected routes", () => {
-  for (const path of ["/map", "/projects", "/financial", "/settings"] as const) {
+  for (const path of ["/map", "/projects", "/customers", "/financial", "/settings"] as const) {
     test(`redirects ${path} to /login when logged out`, async ({ page }) => {
       await page.goto(path);
       await page.waitForURL("**/login", { timeout: 15_000 });

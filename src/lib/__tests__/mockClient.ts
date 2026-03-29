@@ -33,6 +33,7 @@ function createChain(response: () => MockResponse) {
   chain.upsert = vi.fn().mockImplementation(self);
   chain.delete = vi.fn().mockImplementation(self);
   chain.eq = vi.fn().mockImplementation(self);
+  chain.order = vi.fn().mockImplementation(self);
   chain.in = vi.fn().mockImplementation(self);
   chain.gte = vi.fn().mockImplementation(self);
   chain.lte = vi.fn().mockImplementation(self);

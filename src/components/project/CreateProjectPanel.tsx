@@ -227,6 +227,9 @@ function StepCustomer() {
   const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newNotes, setNewNotes] = useState("");
 
   useEffect(() => {
     if (!activeOrg) return;
@@ -298,15 +301,51 @@ function StepCustomer() {
             <span className="text-sm text-primary">{t("createProjectWizard.createNewCustomer")}</span>
           </button>
         ) : (
-          <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
+          <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-3">
             <Input
               autoFocus
+              label={t("createProjectWizard.stepCustomer")}
               placeholder={t("createProjectWizard.customerNamePlaceholder")}
               value={newName}
               onValueChange={setNewName}
               variant="bordered"
               size="sm"
+              classNames={{ inputWrapper: "bg-background" }}
             />
+            <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted-bg/30 p-3 dark:bg-muted-bg/15">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {t("createProjectWizard.newCustomerContactHint")}
+              </p>
+              <Input
+                placeholder={t("createProjectWizard.customerPhonePlaceholder")}
+                value={newPhone}
+                onValueChange={setNewPhone}
+                variant="bordered"
+                size="sm"
+                type="tel"
+                autoComplete="tel"
+                classNames={{ inputWrapper: "bg-background" }}
+              />
+              <Input
+                placeholder={t("createProjectWizard.customerEmailPlaceholder")}
+                value={newEmail}
+                onValueChange={setNewEmail}
+                variant="bordered"
+                size="sm"
+                type="email"
+                autoComplete="email"
+                classNames={{ inputWrapper: "bg-background" }}
+              />
+              <Textarea
+                placeholder={t("createProjectWizard.customerNotesPlaceholder")}
+                value={newNotes}
+                onValueChange={setNewNotes}
+                variant="bordered"
+                minRows={2}
+                size="sm"
+                classNames={{ inputWrapper: "bg-background" }}
+              />
+            </div>
             <div className="flex gap-2">
               <Button
                 color="primary"
@@ -314,14 +353,27 @@ function StepCustomer() {
                 className="flex-1"
                 isDisabled={!newName.trim() || isWorking}
                 isLoading={isWorking}
-                onPress={() => createAndSelectCustomer(newName.trim())}
+                onPress={() =>
+                  void createAndSelectCustomer({
+                    name: newName.trim(),
+                    phone: newPhone.trim() || null,
+                    email: newEmail.trim() || null,
+                    notes: newNotes.trim() || null,
+                  })
+                }
               >
                 {t("createProjectWizard.createNewCustomer")}
               </Button>
               <Button
                 variant="bordered"
                 size="sm"
-                onPress={() => { setShowNewForm(false); setNewName(""); }}
+                onPress={() => {
+                  setShowNewForm(false);
+                  setNewName("");
+                  setNewPhone("");
+                  setNewEmail("");
+                  setNewNotes("");
+                }}
               >
                 {t("createProjectWizard.cancel")}
               </Button>

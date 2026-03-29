@@ -16,6 +16,13 @@ import { createCustomerLocation } from "@/lib/customerLocations";
 import { useOrg } from "@/context/OrgContext";
 import { useAuth } from "@/context/AuthContext";
 
+interface NewCustomerDraft {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+}
+
 export type CreateStep =
   | "idle"
   | "pin"       // waiting for user to click map
@@ -54,7 +61,7 @@ interface NewProjectContextValue {
   confirmAddress: () => void;
   goBackToPin: () => void;
   selectCustomer: (customer: Customer) => void;
-  createAndSelectCustomer: (name: string) => Promise<void>;
+  createAndSelectCustomer: (draft: NewCustomerDraft) => Promise<void>;
   selectLocation: (location: CustomerLocation) => void;
   createAndSelectLocation: (name: string, address: string | null) => Promise<void>;
   goBackToCustomer: () => void;
@@ -186,10 +193,13 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setStep("location");
   }, []);
 
-  const createAndSelectCustomer = useCallback(async (name: string) => {
+  const createAndSelectCustomer = useCallback(async (draft: NewCustomerDraft) => {
     setIsWorking(true);
     const { data, error } = await createCustomer({
-      name,
+      name: draft.name.trim(),
+      phone: draft.phone?.trim() || null,
+      email: draft.email?.trim() || null,
+      notes: draft.notes?.trim() || null,
       organization_id: activeOrg?.organization_id ?? null,
     });
     setIsWorking(false);

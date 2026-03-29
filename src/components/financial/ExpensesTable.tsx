@@ -74,7 +74,8 @@ const STATUS_KEYS: Record<ExpenseStatus, string> = {
   rejected: "financial.statusRejected",
 };
 
-export default function ExpensesTable(_: { period: Period }) {
+export default function ExpensesTable({ period }: { period: Period }) {
+  void period;
   const { t, locale } = useLocale();
   const localeCode = LOCALE_CODE[locale] ?? "sv-SE";
 

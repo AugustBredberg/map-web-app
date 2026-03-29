@@ -39,6 +39,20 @@ const navItems = [
   },
 ];
 
+const customersItem = {
+  labelKey: "nav.customers",
+  href: "/customers",
+  icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+      />
+    </svg>
+  ),
+};
+
 const financialItem = {
   labelKey: "nav.financial",
   href: "/financial",
@@ -71,7 +85,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t } = useLocale();
 
-  const showFinancial =
+  const showAdminNav =
     (!!activeOrg && hasMinRole(activeRole, "admin")) || systemRole === "dev";
 
   const toggleCollapsed = () => {
@@ -84,11 +98,11 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
 
   const settingsItem = navItems.find((item) => item.href === "/settings")!;
   const sidebarItems = navItems.filter((item) => item.href !== "/settings");
-  const allSidebarItems = showFinancial
-    ? [...sidebarItems, financialItem]
+  const allSidebarItems = showAdminNav
+    ? [...sidebarItems, customersItem, financialItem]
     : sidebarItems;
-  const allMobileItems = showFinancial
-    ? [navItems[0], navItems[1], financialItem, navItems[2]]
+  const allMobileItems = showAdminNav
+    ? [navItems[0], navItems[1], customersItem, financialItem, navItems[2]]
     : navItems;
 
   return (
