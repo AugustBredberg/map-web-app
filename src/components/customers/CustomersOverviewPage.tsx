@@ -211,10 +211,10 @@ export default function CustomersOverviewPage() {
         aria-label={t("customersPage.searchPlaceholder")}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden md:flex-row md:gap-4">
-        {/* Customer list */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden md:grid-cols-[20rem_1fr] md:gap-4">
+        {/* Customer list — fixed width on md+ so it does not grow/shrink with detail content */}
         <div
-          className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface md:w-80 md:shrink-0 ${
+          className={`flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface ${
             selectedRow ? "hidden md:flex" : "flex flex-1"
           }`}
         >
@@ -256,7 +256,7 @@ export default function CustomersOverviewPage() {
 
         {/* Detail panel */}
         <div
-          className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface ${
+          className={`flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface ${
             selectedRow ? "flex" : "hidden md:flex"
           }`}
         >
