@@ -39,7 +39,9 @@ export default function ProjectCommentsSection({ projectId, currentUserId }: Pro
         return;
       }
       setLoadError(null);
-      setComments(data ?? []);
+      const rows = data ?? [];
+      const deduped = [...new Map(rows.map((c) => [c.id, c])).values()];
+      setComments(deduped);
     });
     return () => {
       cancelled = true;
@@ -57,7 +59,7 @@ export default function ProjectCommentsSection({ projectId, currentUserId }: Pro
       setPostError(error === "empty" ? t("projectDetails.commentEmpty") : error ?? t("projectDetails.commentPostFailed"));
       return;
     }
-    setComments((prev) => [...prev, data]);
+    setComments((prev) => (prev.some((c) => c.id === data.id) ? prev : [...prev, data]));
     setDraft("");
   };
 

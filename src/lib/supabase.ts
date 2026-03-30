@@ -82,6 +82,19 @@ export type OrganizationMember = {
   hourly_rate: number | null;
 };
 
+/** Catalog entry for tools and materials managed per organization. */
+export type OrganizationItemKind = "tool" | "material";
+
+export type OrganizationItem = {
+  organization_item_id: string;
+  organization_id: string;
+  kind: OrganizationItemKind;
+  name: string;
+  notes: string | null;
+  created_at: string;
+  created_by: string;
+};
+
 export type TimeLogEntry = {
   id: string;
   user_id: string;

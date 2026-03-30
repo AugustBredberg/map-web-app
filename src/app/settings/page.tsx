@@ -19,6 +19,7 @@ import {
 } from "@/lib/invitations";
 import type { Invitation, InvitationWithOrg } from "@/lib/invitations";
 import InviteMemberForm from "@/components/settings/InviteMemberForm";
+import ToolsMaterialsCatalogSection from "@/components/settings/ToolsMaterialsCatalogSection";
 import { createOrganization } from "@/lib/organizations";
 import { useLocale } from "@/context/LocaleContext";
 
@@ -285,6 +286,11 @@ export default function SettingsPage() {
               </ul>
             )}
           </section>
+
+          {/* Admin: Tools & materials catalog */}
+          {!loading && activeOrg && hasMinRole(activeRole, "admin") && (
+            <ToolsMaterialsCatalogSection key={activeOrg.organization_id} organizationId={activeOrg.organization_id} t={t} />
+          )}
 
           {/* Admin: Members */}
           {!loading && activeOrg && hasMinRole(activeRole, "admin") && members.length > 0 && (

@@ -61,6 +61,35 @@ describe("createProject", () => {
     expect(client.from).toHaveBeenCalledWith("project_assignees");
   });
 
+  it("links catalog items after create when organization_item_ids provided", async () => {
+    const client = mockClientSequence([
+      { data: sampleProject, error: null },
+      { data: null, error: null }, // replaceProjectItems delete
+      { data: null, error: null }, // replaceProjectItems insert
+    ]);
+
+    const { data, error } = await createProject(
+      {
+        title: "Test Project",
+        description: null,
+        project_status: 0,
+        start_time: null,
+        customer_id: "1",
+        customer_location_id: "2",
+        organization_id: "org1",
+        organization_item_ids: ["item-a", "item-b"],
+      },
+      [],
+      client,
+    );
+
+    expect(error).toBeNull();
+    expect(data).toEqual(sampleProject);
+    expect(client.from).toHaveBeenCalledTimes(3);
+    expect(client.from).toHaveBeenCalledWith("projects");
+    expect(client.from).toHaveBeenCalledWith("project_items");
+  });
+
   it("returns error when insert fails", async () => {
     const client = mockClient({ data: null, error: { message: "duplicate key" } });
     const { data, error } = await createProject(

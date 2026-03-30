@@ -284,6 +284,55 @@ insert into public.project_comments (project_id, body, created_by) values
     '11111111-1111-1111-1111-111111111111'
   );
 
+-- ---------------------------------------------------------------------------
+-- Tools & materials (catalog + one linked project for local QA)
+-- ---------------------------------------------------------------------------
+insert into public.organization_items (
+  organization_item_id,
+  organization_id,
+  kind,
+  name,
+  notes,
+  created_by
+) values
+  (
+    'c1111111-1111-1111-1111-111111111111',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'tool',
+    'Stege 6 m',
+    null,
+    '11111111-1111-1111-1111-111111111111'
+  ),
+  (
+    'c2222222-2222-2222-2222-222222222222',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'tool',
+    'Vinkelslip',
+    null,
+    '11111111-1111-1111-1111-111111111111'
+  ),
+  (
+    'c3333333-3333-3333-3333-333333333333',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'material',
+    'Kabel 3x2.5 mm²',
+    null,
+    '11111111-1111-1111-1111-111111111111'
+  ),
+  (
+    'c4444444-4444-4444-4444-444444444444',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'material',
+    'Klamrar och plugg',
+    null,
+    '11111111-1111-1111-1111-111111111111'
+  );
+
+insert into public.project_items (project_id, organization_item_id, sort_order) values
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', 'c1111111-1111-1111-1111-111111111111', 0),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', 'c2222222-2222-2222-2222-222222222222', 1),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', 'c3333333-3333-3333-3333-333333333333', 2);
+
 -- Keep auto-generated IDs from colliding with seeded bigint keys.
 select setval(
   'public.customers_customer_id_seq',

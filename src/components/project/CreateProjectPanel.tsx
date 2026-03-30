@@ -20,6 +20,7 @@ import { fetchLocationsForCustomer } from "@/lib/customerLocations";
 import type { Customer, CustomerLocation, OrganizationMember } from "@/lib/supabase";
 import { getOrgMembers } from "@/lib/members";
 import { useLocale } from "@/context/LocaleContext";
+import OrganizationItemsPicker from "@/components/project/OrganizationItemsPicker";
 import {
   forwardGeocode,
   isMapTilerGeocodingAvailable,
@@ -735,6 +736,8 @@ function StepDetails() {
     setStartTime,
     assignees,
     setAssignees,
+    selectedOrganizationItemIds,
+    setSelectedOrganizationItemIds,
     isWorking,
     saveError,
     submitProject,
@@ -813,6 +816,19 @@ function StepDetails() {
           variant="bordered"
           minRows={2}
         />
+
+        {activeOrg && (
+          <div className="rounded-xl border border-border bg-muted-bg/40 p-3">
+            <OrganizationItemsPicker
+              key={activeOrg.organization_id}
+              organizationId={activeOrg.organization_id}
+              value={selectedOrganizationItemIds}
+              onChange={setSelectedOrganizationItemIds}
+              disabled={isWorking}
+              t={t}
+            />
+          </div>
+        )}
 
         <DatePicker
           label={t("createProjectWizard.startTime")}

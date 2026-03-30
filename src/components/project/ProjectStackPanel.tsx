@@ -62,6 +62,7 @@ export default function ProjectStackPanel({ projects, onProjectUpdated, onProjec
       {/* Project details for the currently selected project */}
       {current && (
         <ProjectDetailsPanel
+          key={current.project_id}
           project={current}
           onProjectUpdated={onProjectUpdated}
           onProjectDeleted={onProjectDeleted}

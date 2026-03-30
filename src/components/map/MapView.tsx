@@ -105,7 +105,12 @@ export default function MapView() {
 
     if (projects.length === 1) {
       openDrawerRef.current(
-        <ProjectDetailsPanel project={first} onProjectUpdated={onProjectUpdated} onProjectDeleted={onProjectDeleted} />,
+        <ProjectDetailsPanel
+          key={first.project_id}
+          project={first}
+          onProjectUpdated={onProjectUpdated}
+          onProjectDeleted={onProjectDeleted}
+        />,
         drawerOptions,
       );
     } else {

@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { Project } from "@/lib/supabase";
+import { replaceProjectItems } from "@/lib/organizationItems";
 
 type DbClient = typeof supabase;
 
@@ -65,6 +66,8 @@ export interface CreateProjectInput {
   customer_id: string;
   customer_location_id: string;
   organization_id: string | null;
+  /** Optional catalog item IDs (tools/materials) to attach after the project is created. */
+  organization_item_ids?: string[];
 }
 
 export async function createProject(
@@ -72,9 +75,11 @@ export async function createProject(
   assigneeIds: string[],
   client: DbClient = supabase,
 ): Promise<{ data: Project | null; error: string | null }> {
+  const { organization_item_ids: itemIds = [], ...projectRow } = input;
+
   const { data, error } = await client
     .from("projects")
-    .insert({ ...input, updated_at: new Date().toISOString() })
+    .insert({ ...projectRow, updated_at: new Date().toISOString() })
     .select(PROJECT_FIELDS)
     .single();
 
@@ -92,6 +97,13 @@ export async function createProject(
     );
     if (assigneeError) {
       console.error("Failed to save assignees:", assigneeError.message);
+    }
+  }
+
+  if (itemIds.length > 0) {
+    const { error: itemsError } = await replaceProjectItems(project.project_id, itemIds, client);
+    if (itemsError) {
+      console.error("Failed to save project tools/materials:", itemsError);
     }
   }
 

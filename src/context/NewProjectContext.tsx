@@ -52,6 +52,8 @@ interface NewProjectContextValue {
   setStartTime: (t: ZonedDateTime | null) => void;
   assignees: string[];
   setAssignees: (ids: string[]) => void;
+  selectedOrganizationItemIds: string[];
+  setSelectedOrganizationItemIds: (ids: string[]) => void;
   isWorking: boolean;
   saveError: string | null;
   // Step actions
@@ -89,6 +91,8 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   setStartTime: () => {},
   assignees: [],
   setAssignees: () => {},
+  selectedOrganizationItemIds: [],
+  setSelectedOrganizationItemIds: () => {},
   isWorking: false,
   saveError: null,
   startCreating: () => {},
@@ -138,6 +142,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState<ZonedDateTime | null>(null);
   const [assignees, setAssignees] = useState<string[]>([]);
+  const [selectedOrganizationItemIds, setSelectedOrganizationItemIds] = useState<string[]>([]);
   const [isWorking, setIsWorking] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -159,6 +164,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setDescription("");
     setStartTime(null);
     setAssignees([]);
+    setSelectedOrganizationItemIds([]);
     setIsWorking(false);
     setSaveError(null);
   }, []);
@@ -275,6 +281,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         customer_id: selectedCustomer.customer_id,
         customer_location_id: selectedLocation.customer_location_id,
         organization_id: activeOrg?.organization_id ?? null,
+        organization_item_ids: [...new Set(selectedOrganizationItemIds)],
       },
       assignees,
     );
@@ -288,7 +295,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
 
     resetAll();
     if (project) onProjectSavedRef.current?.(project);
-  }, [selectedCustomer, selectedLocation, title, description, startTime, assignees, activeOrg, resetAll]);
+  }, [selectedCustomer, selectedLocation, title, description, startTime, assignees, selectedOrganizationItemIds, activeOrg, resetAll]);
 
   return (
     <NewProjectContext.Provider
@@ -307,6 +314,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         setStartTime,
         assignees,
         setAssignees,
+        selectedOrganizationItemIds,
+        setSelectedOrganizationItemIds,
         isWorking,
         saveError,
         startCreating,

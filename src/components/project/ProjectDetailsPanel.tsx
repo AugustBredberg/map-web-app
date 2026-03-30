@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button, Input, Textarea, Select, SelectItem, Chip, DatePicker } from "@heroui/react";
 import { CalendarDate, parseDate } from "@internationalized/date";
 import PersonChip from "@/components/project/PersonChip";
@@ -18,6 +18,7 @@ import MapNavigateModal from "@/components/navigation/MapNavigateModal";
 import ProjectHighlightedInstructions from "@/components/project/ProjectHighlightedInstructions";
 import ProjectSiteAndContactCard from "@/components/project/ProjectSiteAndContactCard";
 import ProjectCommentsSection from "@/components/project/ProjectCommentsSection";
+import ProjectJobItemsSection from "@/components/project/ProjectJobItemsSection";
 import ProjectPhotosMockSection from "@/components/project/ProjectPhotosMockSection";
 import { normalizeCustomerJoin } from "@/lib/projectDisplay";
 import { parseProjectCoordinates } from "@/lib/navigationUrls";
@@ -136,6 +137,11 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
       if (data) setMembers(data);
     });
   }, [isAdmin, activeOrg]);
+
+  const uniqueMembers = useMemo(
+    () => [...new Map(members.map((m) => [m.user_id, m])).values()],
+    [members],
+  );
 
   const assigneesLoading = assigneeState?.projectId !== project.project_id;
   const assigneeData = assigneesLoading ? [] : (assigneeState?.data ?? []);
@@ -375,6 +381,16 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         </Button>
       ) : null}
 
+      {activeOrg && (
+        <ProjectJobItemsSection
+          key={`tools-${project.project_id}`}
+          projectId={project.project_id}
+          organizationId={activeOrg.organization_id}
+          isAdmin={isAdmin}
+          t={t}
+        />
+      )}
+
       <ProjectSiteAndContactCard
         siteName={loc?.name ?? null}
         address={loc?.address ?? null}
@@ -487,21 +503,21 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
                 if (typeof keys === "string") return;
                 setDraftAssignees([...keys] as string[]);
               }}
-              isDisabled={isSaving || members.length === 0}
+              isDisabled={isSaving || uniqueMembers.length === 0}
               variant="bordered"
               placeholder={t("createProject.selectAssignees")}
               aria-label={t("projectDetails.editAssignees")}
               renderValue={(items) => (
                 <div className="flex flex-wrap gap-1">
-                  {items.map((item) => (
-                    <Chip key={item.key} size="sm">
+                  {items.map((item, chipIndex) => (
+                    <Chip key={`${String(item.key)}-${chipIndex}`} size="sm">
                       {item.textValue}
                     </Chip>
                   ))}
                 </div>
               )}
             >
-              {members.map((m) => (
+              {uniqueMembers.map((m) => (
                 <SelectItem key={m.user_id} textValue={m.display_name ?? m.user_id}>
                   {m.display_name ?? m.user_id}
                 </SelectItem>
@@ -528,7 +544,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         )}
       </div>
 
-      <ProjectCommentsSection key={project.project_id} projectId={project.project_id} currentUserId={session?.user.id} />
+      <ProjectCommentsSection key={`comments-${project.project_id}`} projectId={project.project_id} currentUserId={session?.user.id} />
 
       <ProjectPhotosMockSection />
 
