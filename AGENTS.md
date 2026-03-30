@@ -43,7 +43,7 @@ Details and UUIDs live in `supabase/seed.sql`.
 | Dev server | `npm run dev` (port 3000) |
 | Lint | `npm run lint` (ESLint) |
 | Unit tests | `npm test` (Vitest — mocks Supabase) |
-| E2E (no local auth) | `npm run test:e2e` — redirects/login only; no seeded backend required |
+| E2E (no local auth) | `npm run test:e2e` — landing + auth redirects only; no seeded backend required |
 | E2E (local Supabase + seed) | `npm run test:e2e:local` — requires Docker, `supabase:start`, `supabase:db:reset`, `.env.e2e` with MapTiler key |
 | Local Supabase | `npm run supabase:start` / `supabase:stop` / `supabase:status` |
 | DB reset (migrations + seed) | `npm run supabase:db:reset` |
@@ -52,7 +52,7 @@ Details and UUIDs live in `supabase/seed.sql`.
 ### Gotchas
 
 - Without `E2E_LOCAL_SUPABASE=1`, Playwright only runs **unauthenticated** specs (`e2e/*.spec.ts`). Tests under `e2e/authenticated/` are skipped.
-- Protected routes (`/map`, `/projects`, `/customers`, `/financial`, `/settings`) redirect to `/login` when unauthenticated.
+- Protected routes (`/map`, `/projects`, `/customers`, `/financial`, `/settings`) redirect to `/?mode=signin` when unauthenticated.
 - Vitest does not need a running database. Playwright **with** local auth needs local Supabase and a valid `NEXT_PUBLIC_MAPTILER_KEY` so the map page can load.
 - The `.env.local` file is git-ignored; recreate from secrets or examples as needed.
 - Signup against **remote** Supabase still requires email confirmation; use **seeded local users** for automated login instead.

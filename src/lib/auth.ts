@@ -16,7 +16,7 @@ export async function signUp(
   password: string,
   client: AuthClient = supabase,
 ) {
-  const redirectTo = `${window.location.origin}/login`;
+  const redirectTo = `${window.location.origin}/?mode=signin`;
   const { data, error } = await client.auth.signUp({
     email,
     password,

@@ -83,7 +83,7 @@ Never use raw string comparisons for org roles like `activeRole === "admin"`. Al
 
 ## Guard Components
 
-- `AuthGuard` — redirects to `/login` if no session
+- `AuthGuard` — redirects to `/?mode=signin` if no session
 - `OrgGuard` — redirects to `/settings` if no active organization
 
 These wrap pages in layout files, not individual components.

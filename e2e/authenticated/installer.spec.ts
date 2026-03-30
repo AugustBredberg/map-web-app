@@ -7,7 +7,7 @@ test.describe("Installer member", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test("sees assigned job only, not admin-only assignment", async ({ page }) => {
-    await page.goto("/login");
+    await page.goto("/?mode=signin");
     await page.getByLabel("E-post").fill("installer@seed.kartapp.test");
     await page.getByLabel("Lösenord", { exact: true }).fill("LocalDev_Seed_2026!");
     await page.getByRole("button", { name: "Logga in" }).click();

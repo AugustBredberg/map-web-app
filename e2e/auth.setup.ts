@@ -10,7 +10,7 @@ const password = process.env.E2E_DEV_PASSWORD ?? "LocalDev_Seed_2026!";
 setup("authenticate dev user", async ({ page }) => {
   fs.mkdirSync(path.dirname(authFile), { recursive: true });
 
-  await page.goto("/login");
+  await page.goto("/?mode=signin");
   await page.getByLabel("E-post").fill(email);
   await page.getByLabel("Lösenord", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Logga in" }).click();

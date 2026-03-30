@@ -7,9 +7,18 @@ export const translations = {
   en: {
     home: {
       title: "Map Web App",
-      description:
-        "An interactive mapping platform. Upload and manage geographic objects on a live map view.",
-      openMap: "Open Map",
+      landingHeadline: "Your operations, on the map.",
+      landingSub:
+        "Plan jobs, assign installers, and keep customers in the loop — built for installation companies.",
+      benefit1: "Map-first planning for every job",
+      benefit2: "One place for office and field teams",
+      benefit3: "Up and running in minutes",
+      inviteHint:
+        "Team member? Use the link in your invitation email to join your company.",
+      headerSignIn: "Sign in",
+      tabCreateAccount: "New account",
+      tabSignIn: "Sign in",
+      ctaSubmit: "Create account",
     },
     login: {
       signIn: "Sign in",
@@ -403,9 +412,18 @@ export const translations = {
   sv: {
     home: {
       title: "Kartapp",
-      description:
-        "En interaktiv kartplattform. Ladda upp och hantera geografiska objekt p\u00e5 en livekarta.",
-      openMap: "\u00d6ppna karta",
+      landingHeadline: "Din drift, p\u00e5 kartan.",
+      landingSub:
+        "Planera jobb, tilldela mont\u00f6rer och h\u00e5ll kunder i loopen \u2014 byggt f\u00f6r installationsbolag.",
+      benefit1: "Kartn\u00e4ra planering f\u00f6r varje jobb",
+      benefit2: "Ett st\u00e4lle f\u00f6r kontor och f\u00e4lt",
+      benefit3: "Ig\u00e5ng p\u00e5 n\u00e5gra minuter",
+      inviteHint:
+        "Mont\u00f6r? Anv\u00e4nd l\u00e4nken i inbjudan f\u00f6r att g\u00e5 med i f\u00f6retaget.",
+      headerSignIn: "Logga in",
+      tabCreateAccount: "Nytt konto",
+      tabSignIn: "Logga in",
+      ctaSubmit: "Skapa konto",
     },
     login: {
       signIn: "Logga in",

@@ -133,7 +133,7 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push("/login");
+    router.push("/?mode=signin");
   };
 
   const handleCreateOrg = async () => {
