@@ -235,6 +235,21 @@ export const translations = {
       unknownOrganization: "Unknown organization",
       language: "Language",
       languageDesc: "Choose display language",
+      selfServeNoOrg: "Create your company to use Kartapp.",
+      goCreateCompany: "Create company",
+    },
+    onboarding: {
+      createOrgTitle: "Name your company",
+      createOrgSub: "You\u2019ll be the organization admin — you can invite installers later.",
+      companyName: "Company name",
+      continue: "Continue",
+      verifyEmailTitle: "Confirm your email first",
+      verifyEmailBody:
+        "We sent a confirmation link. Open it, then return here to create your company.",
+      noOrgTitle: "No organization yet",
+      noOrgBody:
+        "This account isn\u2019t linked to a company. If you were invited, sign in with the same email as the invitation, or ask your administrator to send a new invite.",
+      backToSettings: "Open settings",
     },
     inviteMember: {
       emailPlaceholder: "Email address",
@@ -640,6 +655,21 @@ export const translations = {
       unknownOrganization: "Ok\u00e4nd organisation",
       language: "Spr\u00e5k",
       languageDesc: "V\u00e4lj visningsspr\u00e5k",
+      selfServeNoOrg: "Skapa ditt f\u00f6retag f\u00f6r att anv\u00e4nda Kartapp.",
+      goCreateCompany: "Skapa f\u00f6retag",
+    },
+    onboarding: {
+      createOrgTitle: "Namnge ditt f\u00f6retag",
+      createOrgSub: "Du blir organisationsadmin \u2014 du kan bjuda in installat\u00f6rer senare.",
+      companyName: "F\u00f6retagsnamn",
+      continue: "Forts\u00e4tt",
+      verifyEmailTitle: "Bekr\u00e4fta din e-post f\u00f6rst",
+      verifyEmailBody:
+        "Vi skickade en bekr\u00e4ftelsel\u00e4nk. \u00d6ppna den och kom sedan tillbaka hit f\u00f6r att skapa ditt f\u00f6retag.",
+      noOrgTitle: "Ingen organisation \u00e4n",
+      noOrgBody:
+        "Det h\u00e4r kontot \u00e4r inte kopplat till ett f\u00f6retag. Om du blev inbjuden, logga in med samma e-post som i inbjudan, eller be administrat\u00f6ren om en ny inbjudan.",
+      backToSettings: "\u00d6ppna inst\u00e4llningar",
     },
     inviteMember: {
       emailPlaceholder: "E-postadress",

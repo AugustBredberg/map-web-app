@@ -5,7 +5,16 @@ import { test, expect } from "@playwright/test";
  * map, projects list, financial, settings, or tools & materials — they are sent to the landing sign-in panel.
  */
 test.describe("Protected routes", () => {
-  for (const path of ["/map", "/projects", "/customers", "/financial", "/settings", "/tools-materials"] as const) {
+  for (const path of [
+    "/map",
+    "/projects",
+    "/customers",
+    "/financial",
+    "/settings",
+    "/tools-materials",
+    "/onboarding/create-org",
+    "/onboarding/no-organization",
+  ] as const) {
     test(`redirects ${path} to landing sign-in when logged out`, async ({ page }) => {
       await page.goto(path);
       await page.waitForURL(/\?mode=signin/, { timeout: 15_000 });

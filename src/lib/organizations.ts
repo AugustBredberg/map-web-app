@@ -49,3 +49,19 @@ export async function createOrganization(
   if (error) return { data: null, error: error.message };
   return { data: data as Organization, error: null };
 }
+
+/**
+ * Self-serve founders only — enforced by create_organization_for_self_serve RPC
+ * (confirmed email, signup_source = self_serve, no existing membership).
+ */
+export async function createOrganizationForSelfServe(
+  name: string,
+  client: DbClient = supabase,
+): Promise<{ data: { organization_id: string } | null; error: string | null }> {
+  const { data, error } = await client.rpc("create_organization_for_self_serve", {
+    p_name: name,
+  });
+
+  if (error) return { data: null, error: error.message };
+  return { data: { organization_id: data as string }, error: null };
+}

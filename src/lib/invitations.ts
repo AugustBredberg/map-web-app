@@ -108,27 +108,17 @@ export async function getMyInvitations(
 
 export async function acceptInvitation(
   invitationId: number,
-  organizationId: string,
-  userId: string,
+  _organizationId: string,
+  _userId: string,
   displayName: string,
   client: DbClient = supabase,
 ): Promise<{ error: string | null }> {
-  const { error: memberError } = await client
-    .from("organization_members")
-    .insert({ organization_id: organizationId, user_id: userId, role: "member", display_name: displayName });
+  const { error } = await client.rpc("accept_invitation_by_id", {
+    p_invitation_id: invitationId,
+    p_display_name: displayName,
+  });
 
-  // 23505 = unique_violation: user is already a member — treat as success
-  if (memberError && memberError.code !== "23505") {
-    console.error("[acceptInvitation] insert member error:", memberError);
-    return { error: memberError.message };
-  }
-
-  const { error: deleteError } = await client
-    .from("organization_invitations")
-    .delete()
-    .eq("id", invitationId);
-
-  return { error: deleteError?.message ?? null };
+  return { error: error?.message ?? null };
 }
 
 /**

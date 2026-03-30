@@ -63,8 +63,8 @@ Required vars:
 - `SUPABASE_ACCESS_TOKEN`
 - `SUPABASE_PROJECT_REF_PROD`
 - `SUPABASE_DB_PASSWORD_PROD`
-- `SUPABASE_PROJECT_REF_DEV` (once dev project exists)
-- `SUPABASE_DB_PASSWORD_DEV` (once dev project exists)
+- `SUPABASE_PROJECT_REF_DEV`
+- `SUPABASE_DB_PASSWORD_DEV`
 
 Load env vars in your shell before running commands:
 
@@ -197,12 +197,39 @@ Reset local DB with migrations + seed:
 npm run supabase:db:reset
 ```
 
-Serve edge functions locally:
+### Edge Functions (required for `send-invite`, `accept-invite`)
 
-```bash
-cp supabase/.env.example supabase/.env
-npm run supabase:functions:serve
-```
+`supabase start` brings up Postgres, Auth, Kong, Storage, etc., but **`supabase functions serve` is what actually runs your code** under `supabase/functions/`. The [Supabase local quickstart](https://supabase.com/docs/guides/functions/local-quickstart) uses **two** terminals: `supabase start`, then `supabase functions serve`.
+
+If you only run `supabase start` and call `POST http://127.0.0.1:54321/functions/v1/send-invite`, Kong often responds with **503 Service Unavailable** because no function worker is bound to that route.
+
+**Setup:**
+
+1. Keep **`npm run supabase:start`** (or `npx supabase start`) running.
+2. Copy env for the function runtime:
+
+   ```bash
+   cp supabase/.env.example supabase/.env
+   ```
+
+3. Fill **`supabase/.env`** with the same values as local Supabase (from `npm run supabase:status` or `npx supabase status -o env`). At minimum:
+
+   - `SUPABASE_URL=http://127.0.0.1:54321` (or the API URL from status)
+   - `SUPABASE_SERVICE_ROLE_KEY` — use the **Secret** / service role key from status (not the anon key)
+
+   Optional for email: `RESEND_API_KEY`, `FROM_EMAIL`, `SITE_URL` (defaults work for testing; without Resend, `send-invite` still creates the invite row and logs the link).
+
+4. In a **second** terminal:
+
+   ```bash
+   npm run supabase:functions:serve
+   ```
+
+   This serves **all** functions in `supabase/functions/` with hot reload at `http://127.0.0.1:54321/functions/v1/<name>`.
+
+5. Keep both processes running while you use the app (`npm run dev`).
+
+**Troubleshooting:** If functions still fail, run `npx supabase functions serve --debug`, confirm Docker is healthy, and try `npx supabase stop` then `npx supabase start` before serving again.
 
 ---
 

@@ -1,5 +1,7 @@
 # Project Guidelines
 
+**Self-serve organization creation (managers) vs invite-only (installers), RPC/RLS, and trial fields:** see [`AGENTS.md`](../AGENTS.md) in the repo root.
+
 ## Product Overview
 
 This app is a **SaaS field management platform** for installation companies. It is designed for businesses whose work is geographically spread out — such as companies installing solar panels, EV chargers, fiber optic cables, or heat pumps — where a manager coordinates multiple installers/workers who travel between several job sites per day.

@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
         email: inv.invitee_email as string,
         password,
         email_confirm: true,
+        user_metadata: { signup_source: "invite" },
       });
 
     if (createError) {
@@ -116,6 +117,15 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const { error: profileError } = await admin
+      .from("profiles")
+      .update({ signup_source: "invite" })
+      .eq("user_id", userId);
+
+    if (profileError) {
+      console.error("[accept-invite] profile signup_source update failed", profileError);
     }
 
     // Consume invitation token.
