@@ -151,7 +151,7 @@ export default function ProjectJobItemsSection({ projectId, organizationId, isAd
                         key={r.organization_item_id}
                         className="flex items-center gap-2 rounded-lg bg-background/60 px-3 py-2 text-sm font-medium text-foreground backdrop-blur-sm dark:bg-black/20"
                       >
-                        <ToolGlyph className="h-4 w-4 shrink-0 text-primary" />
+                        <ToolGlyph className="h-4 w-4 shrink-0 text-primary dark:text-sky-300" />
                         <span className="min-w-0 break-words">{r.organization_items.name}</span>
                       </li>
                     ))}
@@ -169,7 +169,7 @@ export default function ProjectJobItemsSection({ projectId, organizationId, isAd
                         key={r.organization_item_id}
                         className="flex items-center gap-2 rounded-lg bg-background/60 px-3 py-2 text-sm font-medium text-foreground backdrop-blur-sm dark:bg-black/20"
                       >
-                        <MaterialGlyph className="h-4 w-4 shrink-0 text-secondary" />
+                        <MaterialGlyph className="h-4 w-4 shrink-0 text-secondary dark:text-violet-300" />
                         <span className="min-w-0 break-words">{r.organization_items.name}</span>
                       </li>
                     ))}

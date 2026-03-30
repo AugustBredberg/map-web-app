@@ -122,6 +122,34 @@ body {
   font-family: var(--font-sans);
 }
 
+/* ============================================================
+   HeroUI form fields — solid surface fill
+   The default theme leaves bordered inputs transparent; that makes
+   fields disappear on the page canvas in light mode. We use `--surface`
+   so fields match cards. Hover uses HeroUI border tokens only; we keep
+   the same background on hover so the fill does not darken (and we
+   override flat variant’s default hover gray).
+   Targets: data-slot from @heroui/input, @heroui/select.
+   ============================================================ */
+@layer components {
+  .group[data-slot="base"] [data-slot="input-wrapper"] {
+    background-color: var(--surface);
+  }
+
+  .group[data-slot="base"] [data-slot="input-wrapper"][data-hover="true"] {
+    background-color: var(--surface);
+  }
+
+  /* Select (bordered): trigger has shadow-xs + border-medium; accordion/popover triggers do not */
+  .group[data-slot="base"] [data-slot="trigger"].border-medium.shadow-xs {
+    background-color: var(--surface);
+  }
+
+  .group[data-slot="base"] [data-slot="trigger"].border-medium.shadow-xs[data-hover="true"] {
+    background-color: var(--surface);
+  }
+}
+
 /* Dim existing project markers while a new project is being created */
 .map-creating .project-marker {
   opacity: 0.25;

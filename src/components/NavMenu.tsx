@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { useOrg } from "@/context/OrgContext";
 import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
@@ -63,6 +64,22 @@ const financialItem = {
   ),
 };
 
+const toolsMaterialsItem = {
+  labelKey: "nav.toolsMaterials",
+  href: "/tools-materials",
+  icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </svg>
+  ),
+};
+
+const moreIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+  </svg>
+);
+
 const collapseIcon = (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
@@ -83,6 +100,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
   const { activeOrg, activeRole } = useOrg();
   const { systemRole } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useLocale();
 
   const showAdminNav =
@@ -99,11 +117,11 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
   const settingsItem = navItems.find((item) => item.href === "/settings")!;
   const sidebarItems = navItems.filter((item) => item.href !== "/settings");
   const allSidebarItems = showAdminNav
-    ? [...sidebarItems, customersItem, financialItem]
+    ? [...sidebarItems, customersItem, financialItem, toolsMaterialsItem]
     : sidebarItems;
-  const allMobileItems = showAdminNav
-    ? [navItems[0], navItems[1], customersItem, financialItem, navItems[2]]
-    : navItems;
+  const mobilePrimaryAdmin = [navItems[0], navItems[1], customersItem, financialItem];
+  const moreMenuActive =
+    pathname.startsWith("/settings") || pathname.startsWith("/tools-materials");
 
   return (
     <div className="flex h-dvh w-screen flex-col md:flex-row">
@@ -184,27 +202,86 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile bottom tab bar */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 bg-sidebar-bg md:hidden">
-        <ul className="flex items-center justify-around">
-          {allMobileItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <li key={item.href} className="flex-1">
-                <Link
-                  href={item.href}
-                  className={`flex flex-col items-center py-2 text-xs font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
-                    isActive ? "text-sidebar-fg" : "text-sidebar-muted hover:text-sidebar-fg"
-                  }`}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <span className={`flex flex-col items-center gap-1 rounded-xl px-4 py-1 ${isActive ? "bg-sidebar-active text-white" : ""}`}>
-                    {item.icon}
-                    <span>{t(item.labelKey)}</span>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
+      <nav className="fixed bottom-0 inset-x-0 z-30 border-t border-border bg-sidebar-bg md:hidden" aria-label={t("nav.appName")}>
+        <ul className="flex items-stretch justify-around">
+          {showAdminNav
+            ? (
+              <>
+                {mobilePrimaryAdmin.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <li key={item.href} className="flex min-w-0 flex-1">
+                      <Link
+                        href={item.href}
+                        className={`flex w-full flex-col items-center justify-center py-2 text-xs font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
+                          isActive ? "text-sidebar-fg" : "text-sidebar-muted hover:text-sidebar-fg"
+                        }`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        <span className={`flex max-w-full flex-col items-center gap-1 rounded-xl px-2 py-1 ${isActive ? "bg-sidebar-active text-white" : ""}`}>
+                          {item.icon}
+                          <span className="truncate">{t(item.labelKey)}</span>
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+                <li className="flex min-w-0 flex-1">
+                  <Dropdown placement="top" offset={10} classNames={{ content: "min-w-[12rem]" }}>
+                    <DropdownTrigger className="w-full">
+                      <button
+                        type="button"
+                        className={`flex w-full flex-col items-center justify-center py-2 text-xs font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
+                          moreMenuActive ? "text-sidebar-fg" : "text-sidebar-muted hover:text-sidebar-fg"
+                        }`}
+                        aria-haspopup="menu"
+                        aria-label={t("nav.more")}
+                      >
+                        <span className={`flex max-w-full flex-col items-center gap-1 rounded-xl px-2 py-1 ${moreMenuActive ? "bg-sidebar-active text-white" : ""}`}>
+                          {moreIcon}
+                          <span className="truncate">{t("nav.more")}</span>
+                        </span>
+                      </button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label={t("nav.more")}
+                      onAction={(key) => {
+                        if (key === "settings") router.push("/settings");
+                        if (key === "tools") router.push("/tools-materials");
+                      }}
+                    >
+                      <DropdownItem key="settings" startContent={settingsItem.icon} textValue={t("nav.settings")}>
+                        {t("nav.settings")}
+                      </DropdownItem>
+                      <DropdownItem key="tools" startContent={toolsMaterialsItem.icon} textValue={t("nav.toolsMaterials")}>
+                        {t("nav.toolsMaterials")}
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                </li>
+              </>
+            )
+            : (
+              navItems.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+                return (
+                  <li key={item.href} className="flex min-w-0 flex-1">
+                    <Link
+                      href={item.href}
+                      className={`flex w-full flex-col items-center justify-center py-2 text-xs font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
+                        isActive ? "text-sidebar-fg" : "text-sidebar-muted hover:text-sidebar-fg"
+                      }`}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      <span className={`flex max-w-full flex-col items-center gap-1 rounded-xl px-4 py-1 ${isActive ? "bg-sidebar-active text-white" : ""}`}>
+                        {item.icon}
+                        <span className="truncate">{t(item.labelKey)}</span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })
+            )}
         </ul>
       </nav>
     </div>

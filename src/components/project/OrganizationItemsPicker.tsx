@@ -146,8 +146,8 @@ export default function OrganizationItemsPicker({ organizationId, value, onChang
               key={item.organization_item_id}
               className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
                 item.kind === "tool"
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-secondary/40 bg-secondary/10 text-secondary"
+                  ? "border-primary/30 bg-primary/10 text-primary dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-100"
+                  : "border-secondary/40 bg-secondary/10 text-secondary dark:border-violet-400/40 dark:bg-violet-500/15 dark:text-violet-100"
               }`}
             >
               {item.kind === "tool" ? (
@@ -159,7 +159,7 @@ export default function OrganizationItemsPicker({ organizationId, value, onChang
               {!disabled && (
                 <button
                   type="button"
-                  className="ml-0.5 rounded-full p-0.5 opacity-70 hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+                  className="ml-0.5 rounded-full p-0.5 opacity-70 hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/15 dark:opacity-90"
                   aria-label={t("organizationItems.removeSelected")}
                   onClick={() => toggle(item.organization_item_id)}
                 >
@@ -224,13 +224,17 @@ export default function OrganizationItemsPicker({ organizationId, value, onChang
                     onClick={() => toggle(item.organization_item_id)}
                     className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                       on
-                        ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                        ? item.kind === "tool"
+                          ? "bg-primary/15 text-foreground ring-1 ring-primary/30 dark:bg-sky-500/12 dark:text-slate-50 dark:ring-sky-400/35"
+                          : "bg-secondary/15 text-foreground ring-1 ring-secondary/30 dark:bg-violet-500/12 dark:text-slate-50 dark:ring-violet-400/35"
                         : "hover:bg-muted-bg text-foreground"
                     } ${disabled ? "opacity-50" : ""}`}
                   >
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                        item.kind === "tool" ? "bg-primary/10 text-primary" : "bg-secondary/15 text-secondary"
+                        item.kind === "tool"
+                          ? "bg-primary/10 text-primary dark:bg-sky-500/20 dark:text-sky-200"
+                          : "bg-secondary/15 text-secondary dark:bg-violet-500/20 dark:text-violet-200"
                       }`}
                     >
                       {item.kind === "tool" ? (
@@ -241,8 +245,12 @@ export default function OrganizationItemsPicker({ organizationId, value, onChang
                     </span>
                     <span className="min-w-0 flex-1 font-medium leading-snug">{item.name}</span>
                     <span
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-xs ${
-                        on ? "border-primary bg-primary text-primary-foreground" : "border-muted text-transparent"
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold leading-none ${
+                        on
+                          ? item.kind === "tool"
+                            ? "border-sky-500 bg-sky-500 text-white dark:border-sky-400 dark:bg-sky-500"
+                            : "border-violet-500 bg-violet-500 text-white dark:border-violet-400 dark:bg-violet-500"
+                          : "border-muted text-transparent"
                       }`}
                     >
                       ✓

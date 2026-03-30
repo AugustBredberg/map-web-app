@@ -491,7 +491,6 @@ function StepCustomer() {
               onValueChange={setNewName}
               variant="bordered"
               size="sm"
-              classNames={{ inputWrapper: "bg-background" }}
             />
             <div className="space-y-2 rounded-lg border border-dashed border-border bg-muted-bg/30 p-3 dark:bg-muted-bg/15">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -505,7 +504,6 @@ function StepCustomer() {
                 size="sm"
                 type="tel"
                 autoComplete="tel"
-                classNames={{ inputWrapper: "bg-background" }}
               />
               <Input
                 placeholder={t("createProjectWizard.customerEmailPlaceholder")}
@@ -515,7 +513,6 @@ function StepCustomer() {
                 size="sm"
                 type="email"
                 autoComplete="email"
-                classNames={{ inputWrapper: "bg-background" }}
               />
               <Textarea
                 placeholder={t("createProjectWizard.customerNotesPlaceholder")}
@@ -524,7 +521,6 @@ function StepCustomer() {
                 variant="bordered"
                 minRows={2}
                 size="sm"
-                classNames={{ inputWrapper: "bg-background" }}
               />
             </div>
             <div className="flex gap-2">

@@ -98,7 +98,6 @@ export default function CustomerContactSection({ customer, onUpdated }: Props) {
               variant="bordered"
               type="tel"
               autoComplete="tel"
-              classNames={{ inputWrapper: "bg-background" }}
             />
             <Input
               label={t("customersPage.email")}
@@ -108,7 +107,6 @@ export default function CustomerContactSection({ customer, onUpdated }: Props) {
               variant="bordered"
               type="email"
               autoComplete="email"
-              classNames={{ inputWrapper: "bg-background" }}
             />
             <Textarea
               label={t("customersPage.notes")}
@@ -117,7 +115,6 @@ export default function CustomerContactSection({ customer, onUpdated }: Props) {
               onValueChange={setNotes}
               variant="bordered"
               minRows={3}
-              classNames={{ inputWrapper: "bg-background" }}
             />
             {saveError && (
               <p className="text-sm text-red-500 dark:text-red-400" role="alert">

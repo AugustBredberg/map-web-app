@@ -209,7 +209,6 @@ export default function CustomersOverviewPage() {
         onValueChange={onSearchChange}
         placeholder={t("customersPage.searchPlaceholder")}
         aria-label={t("customersPage.searchPlaceholder")}
-        classNames={{ inputWrapper: "bg-surface" }}
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden md:flex-row md:gap-4">
