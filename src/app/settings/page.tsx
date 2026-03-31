@@ -42,6 +42,7 @@ export default function SettingsPage() {
   const [createOrgError, setCreateOrgError] = useState<string | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
+  const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
   const [updatingRateId, setUpdatingRateId] = useState<string | null>(null);
   const [draftRates, setDraftRates] = useState<Record<string, string>>({});
   const [membersKey, setMembersKey] = useState(0);
@@ -75,9 +76,21 @@ export default function SettingsPage() {
 
   const handleRoleChange = async (userId: string, role: Role) => {
     if (!activeOrg) return;
+    setRoleChangeError(null);
+    const target = members.find((member) => member.user_id === userId);
+    const adminCount = members.filter((member) => member.role === "admin").length;
+    const isDemotingLastAdmin = target?.role === "admin" && role !== "admin" && adminCount <= 1;
+    if (isDemotingLastAdmin) {
+      setRoleChangeError(t("settings.lastAdminRoleChangeError"));
+      return;
+    }
     setUpdatingRoleId(userId);
-    await updateMemberRole(activeOrg.organization_id, userId, role);
+    const { error } = await updateMemberRole(activeOrg.organization_id, userId, role);
     setUpdatingRoleId(null);
+    if (error) {
+      setRoleChangeError(error);
+      return;
+    }
     setMembersKey((k) => k + 1);
   };
 
@@ -297,6 +310,7 @@ export default function SettingsPage() {
           {!loading && activeOrg && hasMinRole(activeRole, "admin") && members.length > 0 && (
             <section>
               <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">{t("settings.members")}</p>
+              {roleChangeError && <p className="mb-2 text-xs text-danger">{roleChangeError}</p>}
               <div className="max-h-64 overflow-y-auto rounded-2xl bg-surface">
                 <ul>
                   {members.map((member) => (
