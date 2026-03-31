@@ -57,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let lastSessionUserId: string | null = null;
 
     // Fetch profile flags outside the auth callback to avoid deadlocking Supabase's session lock.
     const fetchProfileFlagsAfterSwitch = (userId: string) => {
@@ -82,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) {
             setSystemRole(data.systemRole);
             setSignupSource(data.signupSource);
+            lastSessionUserId = initialSession.user.id;
           }
         }
       } catch (err) {
@@ -112,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSignupSource("unknown");
         setBootLoading(false);
         setProfileSwitchLoading(false);
+        lastSessionUserId = null;
         return;
       }
 
@@ -121,19 +124,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // SIGNED_IN / USER_UPDATED / INITIAL_SESSION
+      const nextId = s?.user?.id ?? null;
+      const shouldFetchProfile = Boolean(nextId && lastSessionUserId !== nextId);
       setSession((prev) => {
         const prevId = prev?.user?.id ?? null;
-        const nextId = s?.user?.id ?? null;
         if (!s) {
           return null;
-        }
-        if (nextId && prevId !== nextId) {
-          fetchProfileFlagsAfterSwitch(nextId);
         }
         if (prevId === nextId) return prev;
         return s;
       });
+      if (shouldFetchProfile && nextId) {
+        lastSessionUserId = nextId;
+        fetchProfileFlagsAfterSwitch(nextId);
+      }
       if (!s) {
+        lastSessionUserId = null;
         setSystemRole(null);
         setSignupSource("unknown");
       }

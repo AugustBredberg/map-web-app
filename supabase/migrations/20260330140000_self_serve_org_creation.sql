@@ -95,7 +95,7 @@ begin
   if not exists (
     select 1 from organization_invitations
     where id = v_inv.id
-      and invitee_email = auth.email()
+      and lower(invitee_email) = lower(auth.email())
   ) then
     raise exception 'Invitation does not match your account';
   end if;

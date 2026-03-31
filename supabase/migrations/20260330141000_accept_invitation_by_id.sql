@@ -15,6 +15,7 @@ begin
   from organization_invitations
   where id = p_invitation_id
     and accepted_at is null
+    and (expires_at is null or expires_at > now())
   for update;
 
   if not found then
