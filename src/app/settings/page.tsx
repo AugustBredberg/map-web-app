@@ -24,7 +24,7 @@ import { useLocale } from "@/context/LocaleContext";
 
 export default function SettingsPage() {
   const { organizations, activeOrg, activeRole, displayName, setActiveOrg, loading, refreshOrgs } = useOrg();
-  const { session, systemRole } = useAuth();
+  const { session, systemRole, signupSource } = useAuth();
   const router = useRouter();
   const { locale, setLocale, t } = useLocale();
 
@@ -248,10 +248,17 @@ export default function SettingsPage() {
                 <Spinner />
               </div>
             ) : organizations.length === 0 ? (
-              <div className="rounded-2xl p-4 bg-surface">
-                <p className="text-sm text-muted p-y-2">
-                  {t("settings.noOrganization")}
-                </p>
+              <div className="rounded-2xl bg-surface p-4">
+                {signupSource === "self_serve" ? (
+                  <div className="flex flex-col gap-3">
+                    <p className="text-sm text-muted">{t("settings.selfServeNoOrg")}</p>
+                    <Button color="primary" size="sm" className="w-fit" onPress={() => router.push("/onboarding/create-org")}>
+                      {t("settings.goCreateCompany")}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted">{t("settings.noOrganization")}</p>
+                )}
               </div>
             ) : (
               <ul className="flex flex-col gap-2">

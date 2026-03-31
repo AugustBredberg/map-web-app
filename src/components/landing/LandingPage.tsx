@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Input, Spinner } from "@heroui/react";
 import { signInWithPassword, signUp } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
+import { useOrg } from "@/context/OrgContext";
 import { useLocale } from "@/context/LocaleContext";
 
 type AuthMode = "signin" | "signup";
@@ -24,7 +25,8 @@ function BenefitRow({ children }: { children: ReactNode }) {
 export default function LandingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { session, loading: authLoading } = useAuth();
+  const { session, systemRole, signupSource, loading: authLoading } = useAuth();
+  const { organizations, loading: orgLoading } = useOrg();
   const { t } = useLocale();
 
   const mode: AuthMode =
@@ -37,10 +39,22 @@ export default function LandingPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && session) {
+    if (authLoading || orgLoading) return;
+    if (!session) return;
+    if (systemRole === "dev") {
       router.replace("/map");
+      return;
     }
-  }, [session, authLoading, router]);
+    if (organizations.length > 0) {
+      router.replace("/map");
+      return;
+    }
+    if (signupSource === "self_serve") {
+      router.replace("/onboarding/create-org");
+      return;
+    }
+    router.replace("/onboarding/no-organization");
+  }, [session, authLoading, orgLoading, systemRole, signupSource, organizations.length, router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -52,9 +66,8 @@ export default function LandingPage() {
       const { error: err } = await signInWithPassword(email, password);
       if (err) {
         setError(err);
-      } else {
-        router.push("/map");
       }
+      // Post-login route (map vs onboarding) is chosen in useEffect once session/org load.
     } else {
       const { error: err } = await signUp(email, password);
       if (err) {

@@ -19,7 +19,7 @@ type FormMode = "new-user" | "sign-in";
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, refreshProfile } = useAuth();
   const { refreshOrgs } = useOrg();
   const { t } = useLocale();
 
@@ -66,11 +66,12 @@ export default function InvitePage() {
       setError(acceptError);
       setIsSubmitting(false);
     } else {
+      refreshProfile();
       refreshOrgs();
       setIsSubmitting(false);
       setAccepted(true);
     }
-  }, [token, displayName, session, invitation, refreshOrgs]);
+  }, [token, displayName, session, invitation, refreshOrgs, refreshProfile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -112,6 +113,7 @@ export default function InvitePage() {
       return;
     }
 
+    refreshProfile();
     setIsSubmitting(false);
     setAccepted(true);
   };
@@ -145,6 +147,7 @@ export default function InvitePage() {
       return;
     }
 
+    refreshProfile();
     refreshOrgs();
     setIsSubmitting(false);
     setAccepted(true);

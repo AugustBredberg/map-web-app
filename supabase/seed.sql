@@ -133,12 +133,11 @@ insert into auth.identities (
   );
 
 -- ---------------------------------------------------------------------------
--- Profiles (dev flag for global org access)
+-- Profiles (created by on_auth_user_created trigger; set dev flag here)
 -- ---------------------------------------------------------------------------
-insert into public.profiles (user_id, system_role) values
-  ('11111111-1111-1111-1111-111111111111', 'dev'),
-  ('22222222-2222-2222-2222-222222222222', null),
-  ('33333333-3333-3333-3333-333333333333', null);
+update public.profiles
+set system_role = 'dev'
+where user_id = '11111111-1111-1111-1111-111111111111';
 
 -- ---------------------------------------------------------------------------
 -- Organization + members

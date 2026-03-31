@@ -3,43 +3,71 @@
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useState,
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSession, onAuthStateChange } from "@/lib/auth";
-import { getSystemRole } from "@/lib/profiles";
-import type { SystemRole } from "@/lib/supabase";
+import { getProfileFlags } from "@/lib/profiles";
+import type { SignupSource, SystemRole } from "@/lib/supabase";
 
 interface AuthContextValue {
   session: Session | null;
   /** System-level role (cross-org). null means regular user. */
   systemRole: SystemRole | null;
+  /** Signup intent from profile (landing vs invite). */
+  signupSource: SignupSource;
   /** True while the initial session is being fetched */
   loading: boolean;
+  /** Re-fetch profile flags (e.g. after accept-invite updates signup_source). */
+  refreshProfile: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   session: null,
   systemRole: null,
+  signupSource: "unknown",
   loading: true,
+  refreshProfile: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [systemRole, setSystemRole] = useState<SystemRole | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [signupSource, setSignupSource] = useState<SignupSource>("unknown");
+  /** Initial getSession + first profile load */
+  const [bootLoading, setBootLoading] = useState(true);
+  /** Profile flags after sign-in / tab switch to another user (avoids routing on stale signup_source) */
+  const [profileSwitchLoading, setProfileSwitchLoading] = useState(false);
+
+  const loading = bootLoading || profileSwitchLoading;
+
+  const refreshProfile = useCallback(() => {
+    void getSession().then(({ session: s }) => {
+      const uid = s?.user?.id;
+      if (!uid) return;
+      void getProfileFlags(uid).then(({ data }) => {
+        setSystemRole(data.systemRole);
+        setSignupSource(data.signupSource);
+      });
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
+    let lastSessionUserId: string | null = null;
 
-    // Fetch the system role outside the auth callback to avoid deadlocking
-    // Supabase's internal session lock (the callback runs inside that lock,
-    // and any Supabase query also needs the lock → circular wait).
-    const fetchSystemRole = (userId: string) => {
-      getSystemRole(userId).then(({ data }) => {
-        if (!cancelled) setSystemRole(data);
+    // Fetch profile flags outside the auth callback to avoid deadlocking Supabase's session lock.
+    const fetchProfileFlagsAfterSwitch = (userId: string) => {
+      setProfileSwitchLoading(true);
+      getProfileFlags(userId).then(({ data }) => {
+        if (!cancelled) {
+          setSystemRole(data.systemRole);
+          setSignupSource(data.signupSource);
+        }
+        if (!cancelled) setProfileSwitchLoading(false);
       });
     };
 
@@ -51,13 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setSession(initialSession);
         if (initialSession) {
-          const { data } = await getSystemRole(initialSession.user.id);
-          if (!cancelled) setSystemRole(data);
+          const { data } = await getProfileFlags(initialSession.user.id);
+          if (!cancelled) {
+            setSystemRole(data.systemRole);
+            setSignupSource(data.signupSource);
+            lastSessionUserId = initialSession.user.id;
+          }
         }
       } catch (err) {
         console.error("[AuthContext] Failed to load initial session:", err);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setBootLoading(false);
       }
     };
 
@@ -69,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // which runs **inside** an internal navigator lock.  Any Supabase query
     // (including getSession()) also needs that lock, so awaiting a query here
     // would deadlock.  Always schedule Supabase calls outside the callback
-    // (fire-and-forget via fetchSystemRole).
+    // (fire-and-forget via fetchProfileFlags).
     const {
       data: { subscription },
     } = onAuthStateChange((event, incomingSession) => {
@@ -79,7 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === "SIGNED_OUT") {
         setSession(null);
         setSystemRole(null);
-        setLoading(false);
+        setSignupSource("unknown");
+        setBootLoading(false);
+        setProfileSwitchLoading(false);
+        lastSessionUserId = null;
         return;
       }
 
@@ -89,17 +124,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // SIGNED_IN / USER_UPDATED / INITIAL_SESSION
-      // Only update state when the user identity actually changes.
+      const nextId = s?.user?.id ?? null;
+      const shouldFetchProfile = Boolean(nextId && lastSessionUserId !== nextId);
       setSession((prev) => {
         const prevId = prev?.user?.id ?? null;
-        const nextId = s?.user?.id ?? null;
+        if (!s) {
+          return null;
+        }
         if (prevId === nextId) return prev;
         return s;
       });
-      if (s) {
-        fetchSystemRole(s.user.id);
-      } else {
+      if (shouldFetchProfile && nextId) {
+        lastSessionUserId = nextId;
+        fetchProfileFlagsAfterSwitch(nextId);
+      }
+      if (!s) {
+        lastSessionUserId = null;
         setSystemRole(null);
+        setSignupSource("unknown");
       }
     });
 
@@ -114,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, systemRole, loading }}>
+    <AuthContext.Provider value={{ session, systemRole, signupSource, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

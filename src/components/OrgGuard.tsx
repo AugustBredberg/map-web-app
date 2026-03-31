@@ -7,7 +7,7 @@ import { useOrg } from "@/context/OrgContext";
 import { useAuth } from "@/context/AuthContext";
 
 export default function OrgGuard({ children }: { children: ReactNode }) {
-  const { session, loading: authLoading } = useAuth();
+  const { session, systemRole, signupSource, loading: authLoading } = useAuth();
   const { activeOrg, loading: orgLoading } = useOrg();
   const router = useRouter();
 
@@ -16,10 +16,17 @@ export default function OrgGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (loading) return;
     if (!session) return; // AuthGuard handles this redirect
-    if (!activeOrg) {
+    if (activeOrg) return;
+    if (systemRole === "dev") {
       router.replace("/settings");
+      return;
     }
-  }, [loading, session, activeOrg, router]);
+    if (signupSource === "self_serve") {
+      router.replace("/onboarding/create-org");
+      return;
+    }
+    router.replace("/onboarding/no-organization");
+  }, [loading, session, activeOrg, systemRole, signupSource, router]);
 
   if (loading) {
     return (

@@ -20,7 +20,10 @@ export async function signUp(
   const { data, error } = await client.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: redirectTo },
+    options: {
+      emailRedirectTo: redirectTo,
+      data: { signup_source: "self_serve" },
+    },
   });
   return { data, error: error?.message ?? null };
 }

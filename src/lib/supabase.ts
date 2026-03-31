@@ -18,6 +18,9 @@ export function hasMinRole(userRole: string | null, minRole: Role): boolean {
 /** System-level (cross-org) roles. A user with no profile row is a regular user. */
 export type SystemRole = "dev";
 
+/** How the account was created — drives self-serve org creation eligibility. */
+export type SignupSource = "self_serve" | "invite" | "unknown";
+
 export type Customer = {
   customer_id: string;
   name: string;
@@ -71,6 +74,9 @@ export type Organization = {
   organization_id: string;
   created_at: string;
   name: string;
+  /** Present when columns exist (self-serve trial / future billing). */
+  trial_ends_at?: string | null;
+  billing_status?: string | null;
 };
 
 export type OrganizationMember = {

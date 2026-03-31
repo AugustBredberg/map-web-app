@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import type { Organization, OrganizationMember, Role } from "@/lib/supabase";
@@ -62,13 +63,20 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   // This prevents re-fetching orgs on every TOKEN_REFRESHED event (which
   // produces a new session object for the same user).
   const userId = session?.user?.id ?? null;
+  /** Bumps when deps change so async fetchOrgs ignores stale completions (e.g. member path finishing after dev path). */
+  const fetchGeneration = useRef(0);
 
   useEffect(() => {
-    // Wait for auth to resolve first
+    // Wait for auth to resolve first (includes profile flags so systemRole is correct for dev vs member path).
     if (authLoading) return;
 
+    const gen = ++fetchGeneration.current;
+
     const fetchOrgs = async () => {
+      const isStale = () => gen !== fetchGeneration.current;
+
       if (!userId) {
+        if (isStale()) return;
         setOrganizations([]);
         setActiveOrgState(null);
         setActiveRole(null);
@@ -83,9 +91,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       if (systemRole === "dev") {
         // Dev users see all orgs and always have admin role — no membership row needed
         const { data: orgs, error: orgError } = await getAllOrganizations();
+        if (isStale()) return;
         if (orgError) {
           console.error("Failed to fetch organizations:", orgError);
-          setLoading(false);
+          if (!isStale()) setLoading(false);
           return;
         }
         const resolvedOrgs = (orgs ?? []) as Organization[];
@@ -113,9 +122,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       console.log("Fetching org memberships for user:", userId);
       const { data: members, error: memberError } = await getMembershipsByUserId(userId);
 
+      if (isStale()) return;
       if (memberError) {
         console.error("Failed to fetch memberships:", memberError);
-        setLoading(false);
+        if (!isStale()) setLoading(false);
         return;
       }
 
@@ -124,6 +134,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       const orgIds = resolvedMembers.map((m) => m.organization_id);
       console.log("User belongs to org IDs:", orgIds);
       if (orgIds.length === 0) {
+        if (isStale()) return;
         setOrganizations([]);
         setActiveOrgState(null);
         setActiveRole(null);
@@ -135,14 +146,16 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       // Step 2: fetch the organization rows
       const { data: orgs, error: orgError } = await getOrganizationsByIds(orgIds);
 
+      if (isStale()) return;
       if (orgError) {
         console.error("Failed to fetch organizations:", orgError);
-        setLoading(false);
+        if (!isStale()) setLoading(false);
         return;
       }
 
       const resolvedOrgs = (orgs ?? []) as Organization[];
 
+      if (isStale()) return;
       setOrganizations(resolvedOrgs);
 
       // Restore previously selected org from localStorage
@@ -169,10 +182,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
         setDisplayName(null);
       }
 
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     };
 
-    fetchOrgs();
+    void fetchOrgs();
   }, [userId, authLoading, systemRole, refreshKey]);
 
   // Keep activeRole in sync when setActiveOrg is called manually (e.g. from settings)
