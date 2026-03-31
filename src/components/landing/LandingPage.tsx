@@ -69,11 +69,25 @@ export default function LandingPage() {
       }
       // Post-login route (map vs onboarding) is chosen in useEffect once session/org load.
     } else {
-      const { error: err } = await signUp(email, password);
+      const { data, error: err } = await signUp(email, password);
       if (err) {
         setError(err);
       } else {
-        setMessage(t("login.confirmEmailMessage"));
+        const existingUser =
+          Boolean(data?.user) &&
+          Array.isArray(data?.user?.identities) &&
+          data.user.identities.length === 0;
+
+        if (existingUser) {
+          // Supabase may return no error for an already-registered, confirmed user.
+          // In that case, attempt a password sign-in instead of showing "confirm email".
+          const { error: signInErr } = await signInWithPassword(email, password);
+          if (signInErr) {
+            setError(signInErr);
+          }
+        } else {
+          setMessage(t("login.confirmEmailMessage"));
+        }
       }
     }
 
