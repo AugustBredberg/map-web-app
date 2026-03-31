@@ -129,11 +129,15 @@ export default function LandingPage() {
           {t("home.title")}
         </span>
         <Button
-          variant={mode === "signin" ? "solid" : "bordered"}
-          color="primary"
+          variant={mode === "signin" ? "solid" : "flat"}
+          color={mode === "signin" ? "primary" : "default"}
           size="sm"
           radius="full"
-          className="font-medium"
+          className={`font-medium ${
+            mode === "signin"
+              ? ""
+              : "bg-muted-bg text-foreground/90 hover:bg-muted"
+          }`}
           onPress={() => switchMode("signin")}
         >
           {t("home.headerSignIn")}
