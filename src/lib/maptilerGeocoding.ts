@@ -21,6 +21,58 @@ interface MapTilerGeocodeResponse {
   features?: MapTilerGeocodeFeature[];
 }
 
+function normalizeForMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenize(value: string): string[] {
+  const normalized = normalizeForMatch(value);
+  if (!normalized) return [];
+  return normalized.split(" ").filter(Boolean);
+}
+
+function scoreHit(query: string, placeName: string): number {
+  const qNorm = normalizeForMatch(query);
+  const pNorm = normalizeForMatch(placeName);
+  if (!qNorm || !pNorm) return 0;
+
+  let score = 0;
+  if (pNorm === qNorm) score += 300;
+  if (pNorm.startsWith(qNorm)) score += 120;
+  if (pNorm.includes(qNorm)) score += 80;
+
+  const qTokens = tokenize(query);
+  const pTokens = tokenize(placeName);
+  const pTokenSet = new Set(pTokens);
+  const allTokensMatch = qTokens.length > 0 && qTokens.every((token) => pNorm.includes(token));
+  const matchedTokenCount = qTokens.reduce(
+    (count, token) => count + (pTokenSet.has(token) || pNorm.includes(token) ? 1 : 0),
+    0,
+  );
+
+  score += matchedTokenCount * 25;
+  if (allTokensMatch) score += 100;
+  if (qTokens.some((t) => /\d/.test(t))) {
+    const numericTokenMatches = qTokens.filter((t) => /\d/.test(t) && pNorm.includes(t)).length;
+    score += numericTokenMatches * 40;
+  }
+  return score;
+}
+
+async function fetchMapTilerGeocode(query: string, params: URLSearchParams): Promise<ForwardGeocodeHit[]> {
+  const path = encodeURIComponent(query);
+  const res = await fetch(`https://api.maptiler.com/geocoding/${path}.json?${params}`);
+  if (!res.ok) return [];
+  const json = (await res.json()) as MapTilerGeocodeResponse;
+  return hitsFromMapTilerGeocodeJson(json);
+}
+
 /** Exported for unit tests (GeoJSON parsing). */
 export function hitsFromMapTilerGeocodeJson(json: MapTilerGeocodeResponse): ForwardGeocodeHit[] {
   const features = json.features ?? [];
@@ -48,18 +100,35 @@ export async function forwardGeocode(
 
   const limit = Math.min(Math.max(options?.limit ?? 8, 1), 10);
   const lang = options?.language ?? "en";
-
-  const path = encodeURIComponent(q);
-  const params = new URLSearchParams({
+  const baseParams = new URLSearchParams({
     key: MAPTILER_KEY,
-    limit: String(limit),
-    autocomplete: "true",
     language: lang,
   });
+  const strictParams = new URLSearchParams(baseParams);
+  strictParams.set("limit", "10");
+  strictParams.set("autocomplete", "false");
+  strictParams.set("fuzzyMatch", "false");
+  strictParams.set("types", "address");
 
-  const res = await fetch(`https://api.maptiler.com/geocoding/${path}.json?${params}`);
-  if (!res.ok) return [];
+  const broadParams = new URLSearchParams(baseParams);
+  broadParams.set("limit", "10");
+  broadParams.set("autocomplete", "true");
+  broadParams.set("fuzzyMatch", "true");
 
-  const json = (await res.json()) as MapTilerGeocodeResponse;
-  return hitsFromMapTilerGeocodeJson(json);
+  const [strictHits, broadHits] = await Promise.all([
+    fetchMapTilerGeocode(q, strictParams),
+    fetchMapTilerGeocode(q, broadParams),
+  ]);
+
+  const dedup = new Map<string, ForwardGeocodeHit>();
+  for (const hit of [...strictHits, ...broadHits]) {
+    const key = `${hit.lng},${hit.lat}:${hit.placeName}`;
+    if (!dedup.has(key)) dedup.set(key, hit);
+  }
+
+  return [...dedup.values()]
+    .map((hit) => ({ hit, score: scoreHit(q, hit.placeName) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((row) => row.hit);
 }

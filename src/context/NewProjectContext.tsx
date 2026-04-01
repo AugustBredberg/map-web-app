@@ -15,6 +15,7 @@ import { createCustomer } from "@/lib/customers";
 import { createCustomerLocation } from "@/lib/customerLocations";
 import { useOrg } from "@/context/OrgContext";
 import { useAuth } from "@/context/AuthContext";
+import type { ProjectStatus } from "@/lib/projectStatus";
 
 interface NewCustomerDraft {
   name: string;
@@ -48,6 +49,8 @@ interface NewProjectContextValue {
   setTitle: (t: string) => void;
   description: string;
   setDescription: (d: string) => void;
+  projectStatus: ProjectStatus;
+  setProjectStatus: (status: ProjectStatus) => void;
   startTime: ZonedDateTime | null;
   setStartTime: (t: ZonedDateTime | null) => void;
   assignees: string[];
@@ -87,6 +90,8 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   setTitle: () => {},
   description: "",
   setDescription: () => {},
+  projectStatus: 0,
+  setProjectStatus: () => {},
   startTime: null,
   setStartTime: () => {},
   assignees: [],
@@ -140,6 +145,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [projectStatus, setProjectStatus] = useState<ProjectStatus>(0);
   const [startTime, setStartTime] = useState<ZonedDateTime | null>(null);
   const [assignees, setAssignees] = useState<string[]>([]);
   const [selectedOrganizationItemIds, setSelectedOrganizationItemIds] = useState<string[]>([]);
@@ -162,6 +168,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setSelectedLocation(null);
     setTitle("");
     setDescription("");
+    setProjectStatus(0);
     setStartTime(null);
     setAssignees([]);
     setSelectedOrganizationItemIds([]);
@@ -239,6 +246,13 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
 
   const selectLocation = useCallback((location: CustomerLocation) => {
     setSelectedLocation(location);
+    const coords = location.location?.coordinates;
+    if (coords) {
+      const [lng, lat] = coords;
+      const nextPin = { lng, lat };
+      setPinCoords(nextPin);
+      placePinOnMapRef.current?.(nextPin);
+    }
     setStep("details");
   }, []);
 
@@ -277,7 +291,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
       {
         title,
         description: description.trim() || null,
-        project_status: 0,
+        project_status: projectStatus,
         start_time: startTime ? startTime.toDate().toISOString() : null,
         customer_id: selectedCustomer.customer_id,
         customer_location_id: selectedLocation.customer_location_id,
@@ -296,7 +310,7 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
 
     resetAll();
     if (project) onProjectSavedRef.current?.(project);
-  }, [selectedCustomer, selectedLocation, title, description, startTime, assignees, selectedOrganizationItemIds, activeOrg, resetAll]);
+  }, [selectedCustomer, selectedLocation, title, description, projectStatus, startTime, assignees, selectedOrganizationItemIds, activeOrg, resetAll]);
 
   return (
     <NewProjectContext.Provider
@@ -311,6 +325,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         setTitle,
         description,
         setDescription,
+        projectStatus,
+        setProjectStatus,
         startTime,
         setStartTime,
         assignees,

@@ -26,6 +26,7 @@ import {
   isMapTilerGeocodingAvailable,
   type ForwardGeocodeHit,
 } from "@/lib/maptilerGeocoding";
+import { PROJECT_STATUSES, STATUS_ICON_PATHS, type ProjectStatus } from "@/lib/projectStatus";
 
 // ---------------------------------------------------------------------------
 // Distance helper
@@ -728,6 +729,8 @@ function StepDetails() {
     setTitle,
     description,
     setDescription,
+    projectStatus,
+    setProjectStatus,
     startTime,
     setStartTime,
     assignees,
@@ -812,6 +815,31 @@ function StepDetails() {
           variant="bordered"
           minRows={2}
         />
+
+        <Select
+          label={t("createProjectWizard.statusLabel")}
+          selectedKeys={new Set([String(projectStatus)])}
+          onSelectionChange={(keys) => {
+            const next = [...keys][0];
+            if (next === undefined) return;
+            const parsed = Number(next);
+            if (Number.isNaN(parsed)) return;
+            setProjectStatus(parsed as ProjectStatus);
+          }}
+          isDisabled={isWorking}
+          variant="bordered"
+        >
+          {PROJECT_STATUSES.map((status) => (
+            <SelectItem key={String(status.value)} textValue={t(`statusLabels.${status.value}`)}>
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={STATUS_ICON_PATHS[status.value]} />
+                </svg>
+                <span>{t(`statusLabels.${status.value}`)}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </Select>
 
         {activeOrg && (
           <div className="rounded-xl border border-border bg-muted-bg/40 p-3">
