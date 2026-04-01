@@ -249,7 +249,8 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
       customer_id: selectedCustomer.customer_id,
       name,
       address,
-      location: `POINT(${pinCoords.lng} ${pinCoords.lat})`,
+      // Include SRID so inserts also work when DB enforces geometry(Point,4326).
+      location: `SRID=4326;POINT(${pinCoords.lng} ${pinCoords.lat})`,
       created_by: session?.user.id ?? null,
     });
     setIsWorking(false);

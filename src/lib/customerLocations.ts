@@ -29,7 +29,7 @@ export interface CreateCustomerLocationInput {
   customer_id: string;
   name: string;
   address: string | null;
-  location: string; // WKT e.g. "POINT(lng lat)"
+  location: string; // EWKT e.g. "SRID=4326;POINT(lng lat)"
   created_by?: string | null;
 }
 
