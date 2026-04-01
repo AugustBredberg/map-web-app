@@ -327,7 +327,7 @@ export default function InvitePage() {
           <div className="flex flex-col items-center gap-4 text-center">
             <h1 className="text-xl font-bold text-foreground">{t("invite.successTitle")}</h1>
             <p className="text-sm text-muted">{t("invite.successMessage")}</p>
-            <Button color="primary" onPress={() => router.push("/map")}>
+            <Button color="primary" onPress={() => router.push("/work")}>
               {t("invite.goToApp")}
             </Button>
           </div>

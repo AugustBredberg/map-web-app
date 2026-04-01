@@ -34,22 +34,22 @@ Kanske att vi ska ändra statusarna till:
 
 export const STATUS_META: Record<number, StatusMeta> = {
   0: { description: "New job",            iconColor: "text-slate-600 dark:text-slate-400",  border: "border-slate-400 dark:border-slate-600",  bg: "bg-slate-50 dark:bg-slate-800/50"  },
-  1: { description: "Customer visit",     iconColor: "text-violet-500 dark:text-violet-400", border: "border-violet-400 dark:border-violet-600", bg: "bg-violet-50 dark:bg-violet-900/30" },
-  2: { description: "Ready to start work", iconColor: "text-teal-500 dark:text-teal-400",    border: "border-teal-400 dark:border-teal-600",    bg: "bg-teal-50 dark:bg-teal-900/30"   },
-  3: { description: "Work ongoing",       iconColor: "text-blue-500 dark:text-blue-400",     border: "border-blue-400 dark:border-blue-600",     bg: "bg-blue-50 dark:bg-blue-900/30"   },
+  1: { description: "Customer visit",     iconColor: "text-blue-600 dark:text-blue-400", border: "border-blue-500 dark:border-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
+  2: { description: "Ready to start work", iconColor: "text-blue-600 dark:text-blue-400",    border: "border-blue-600 dark:border-blue-700",    bg: "bg-blue-50 dark:bg-blue-950/30"   },
+  3: { description: "Work ongoing",       iconColor: "text-blue-600 dark:text-blue-400",     border: "border-blue-600 dark:border-blue-700",     bg: "bg-blue-50 dark:bg-blue-950/30"   },
   4: { description: "Work blocked",       iconColor: "text-amber-500 dark:text-amber-400",   border: "border-amber-400 dark:border-amber-600",   bg: "bg-amber-50 dark:bg-amber-900/30"  },
   5: { description: "Job is done",        iconColor: "text-green-500 dark:text-green-400",   border: "border-green-400 dark:border-green-600",   bg: "bg-green-50 dark:bg-green-900/30"  },
   6: { description: "Job was cancelled",  iconColor: "text-red-600 dark:text-red-400",       border: "border-red-400 dark:border-red-600",       bg: "bg-red-50 dark:bg-red-900/30"    },
 };
 
-/** Solid hex colours used for map pin rendering (matches STATUS_META iconColor). */
+/** Solid hex colours for map pins and field accent bars (aligned with brand primary, not rainbow UI). */
 export const STATUS_SOLID_COLORS: Record<number, string> = {
   0: "#475569", // slate-600
-  1: "#8b5cf6", // violet-500
-  2: "#14b8a6", // teal-500
-  3: "#3b82f6", // blue-500
+  1: "#2563eb", // blue-600
+  2: "#2563eb", // blue-600
+  3: "#1d4ed8", // blue-700 / app primary
   4: "#f59e0b", // amber-500
-  5: "#16a34a", // green-500
+  5: "#16a34a", // green-600
   6: "#dc2626", // red-600
 };
 

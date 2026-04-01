@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fetchProjects, createProject } from "@/lib/projects";
+import { fetchProjects, fetchProjectById, createProject } from "@/lib/projects";
 import { mockClient, mockClientSequence } from "./mockClient";
 
 const sampleProject = {
@@ -32,6 +32,23 @@ describe("fetchProjects", () => {
     const { data, error } = await fetchProjects("org1", undefined, client);
     expect(data).toBeNull();
     expect(error).toBe("db down");
+  });
+});
+
+describe("fetchProjectById", () => {
+  it("returns a single project", async () => {
+    const client = mockClient({ data: sampleProject, error: null });
+    const { data, error } = await fetchProjectById("p1", client);
+    expect(error).toBeNull();
+    expect(data).toEqual(sampleProject);
+    expect(client.from).toHaveBeenCalledWith("projects");
+  });
+
+  it("returns null when not found", async () => {
+    const client = mockClient({ data: null, error: null });
+    const { data, error } = await fetchProjectById("missing", client);
+    expect(error).toBeNull();
+    expect(data).toBeNull();
   });
 });
 

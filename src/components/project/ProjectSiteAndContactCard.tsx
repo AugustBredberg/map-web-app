@@ -20,15 +20,17 @@ export default function ProjectSiteAndContactCard({
   canNavigate,
 }: Props) {
   const { t } = useLocale();
+  const shell = "rounded-xl border border-border bg-surface";
+  const heading = "text-xs font-bold uppercase tracking-widest text-muted";
 
   return (
-    <section className="rounded-2xl border-2 border-border bg-surface p-4 shadow-sm">
+    <section className={`p-4 ${shell}`}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-muted">{t("projectDetails.siteAndContact")}</h3>
+        <h3 className={heading}>{t("projectDetails.siteAndContact")}</h3>
         <Button
           size="sm"
           color="primary"
-          variant="solid"
+          variant="bordered"
           className="shrink-0 font-semibold"
           isDisabled={!canNavigate}
           onPress={onNavigatePress}
@@ -87,7 +89,7 @@ export default function ProjectSiteAndContactCard({
                 </a>
               ) : null}
               {!customer.phone?.trim() && !customer.email?.trim() ? (
-                <p className="text-sm text-muted">{t("projectDetails.noCustomerContact")}</p>
+                <p className="text-sm text-foreground/75">{t("projectDetails.noCustomerContact")}</p>
               ) : null}
             </div>
           </div>

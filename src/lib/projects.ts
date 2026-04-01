@@ -55,6 +55,15 @@ export async function fetchProjects(
   return { data: rows, error: null };
 }
 
+export async function fetchProjectById(
+  projectId: string,
+  client: DbClient = supabase,
+): Promise<{ data: Project | null; error: string | null }> {
+  const { data, error } = await client.from("projects").select(PROJECT_FIELDS).eq("project_id", projectId).maybeSingle();
+  if (error) return { data: null, error: error.message };
+  return { data: data as Project | null, error: null };
+}
+
 // ---------------------------------------------------------------------------
 // Create
 // ---------------------------------------------------------------------------

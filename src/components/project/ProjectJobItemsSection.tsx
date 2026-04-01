@@ -31,6 +31,10 @@ interface Props {
   organizationId: string;
   isAdmin: boolean;
   t: (key: string) => string;
+  /** `admin` = flat list styling for office panels; `default` = field card. */
+  variant?: "default" | "admin";
+  /** When set, installers see an empty-state card (i18n key) instead of hiding the block when there are no items. */
+  installerEmptyHintKey?: string;
 }
 
 function PencilIcon() {
@@ -41,7 +45,14 @@ function PencilIcon() {
   );
 }
 
-export default function ProjectJobItemsSection({ projectId, organizationId, isAdmin, t }: Props) {
+export default function ProjectJobItemsSection({
+  projectId,
+  organizationId,
+  isAdmin,
+  t,
+  variant = "default",
+  installerEmptyHintKey,
+}: Props) {
   const [rows, setRows] = useState<ProjectItemRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
@@ -95,30 +106,58 @@ export default function ProjectJobItemsSection({ projectId, organizationId, isAd
   }
 
   if (!hasAny && !isAdmin) {
-    return null;
+    if (!installerEmptyHintKey) return null;
+    return (
+      <section className="overflow-hidden rounded-xl border border-border bg-surface">
+        <div className="p-4">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-start gap-2">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted-bg text-muted [&_svg]:shrink-0">
+                <ToolGlyph className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold leading-tight text-foreground">{t("organizationItems.bringToSiteTitle")}</h3>
+                <p className="break-words text-xs leading-snug text-muted">{t("organizationItems.bringToSiteSubtitle")}</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-foreground/80">{t(installerEmptyHintKey)}</p>
+        </div>
+      </section>
+    );
   }
+
+  const isOffice = variant === "admin";
+
+  const subsectionLabelClass = "mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted";
+  const listRowClass = "flex items-center gap-2 rounded border border-border px-2.5 py-1.5 text-sm text-foreground";
 
   return (
     <>
-      <section className="relative overflow-hidden rounded-2xl border-2 border-emerald-500/25 bg-gradient-to-br from-emerald-500/[0.07] via-surface to-surface shadow-sm dark:from-emerald-500/10">
-        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-400/10 blur-2xl" />
-        <div className="relative p-4">
+      <section className="overflow-hidden rounded-xl border border-border bg-surface">
+        <div className="p-4">
           <div className="mb-3 flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-start gap-2">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 [&_svg]:shrink-0">
-                <ToolGlyph className="h-5 w-5" />
+              <span
+                className={
+                  isOffice
+                    ? "flex h-8 w-8 shrink-0 items-center justify-center rounded border border-border bg-muted-bg text-muted [&_svg]:shrink-0"
+                    : "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted-bg text-muted [&_svg]:shrink-0"
+                }
+              >
+                <ToolGlyph className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-bold leading-tight text-foreground">{t("organizationItems.bringToSiteTitle")}</h3>
-                <p className="text-xs leading-snug text-muted break-words">{t("organizationItems.bringToSiteSubtitle")}</p>
+                <h3 className="text-sm font-semibold leading-tight text-foreground">{t("organizationItems.bringToSiteTitle")}</h3>
+                <p className="break-words text-xs leading-snug text-muted">{t("organizationItems.bringToSiteSubtitle")}</p>
               </div>
             </div>
             {isAdmin && (
               <Button
                 isIconOnly
                 size="sm"
-                variant="flat"
-                className="shrink-0 text-emerald-800 dark:text-emerald-200"
+                variant="light"
+                className="shrink-0 text-muted"
                 aria-label={t("organizationItems.editJobItems")}
                 onPress={openEdit}
               >
@@ -131,10 +170,10 @@ export default function ProjectJobItemsSection({ projectId, organizationId, isAd
             <Button
               fullWidth
               variant="bordered"
-              className="h-auto min-h-11 border-dashed border-emerald-500/40 px-4 py-3 text-emerald-900 dark:text-emerald-100"
+              className="h-auto min-h-10 rounded-xl border-dashed border-border bg-surface px-3 py-2 text-sm"
               onPress={openEdit}
             >
-              <span className="block w-full text-left text-sm font-semibold leading-snug whitespace-normal break-words">
+              <span className="block w-full whitespace-normal break-words text-left text-sm font-medium leading-snug">
                 {t("organizationItems.adminEmptyHint")}
               </span>
             </Button>
@@ -142,15 +181,10 @@ export default function ProjectJobItemsSection({ projectId, organizationId, isAd
             <div className="flex flex-col gap-4">
               {tools.length > 0 && (
                 <div>
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-emerald-800/80 dark:text-emerald-200/90">
-                    {t("organizationItems.tools")}
-                  </p>
+                  <p className={subsectionLabelClass}>{t("organizationItems.tools")}</p>
                   <ul className="flex flex-col gap-1.5">
                     {tools.map((r) => (
-                      <li
-                        key={r.organization_item_id}
-                        className="flex items-center gap-2 rounded-lg bg-background/60 px-3 py-2 text-sm font-medium text-foreground backdrop-blur-sm dark:bg-black/20"
-                      >
+                      <li key={r.organization_item_id} className={listRowClass}>
                         <ToolGlyph className="h-4 w-4 shrink-0 text-primary dark:text-sky-300" />
                         <span className="min-w-0 break-words">{r.organization_items.name}</span>
                       </li>
@@ -160,16 +194,11 @@ export default function ProjectJobItemsSection({ projectId, organizationId, isAd
               )}
               {materials.length > 0 && (
                 <div>
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-violet-800/80 dark:text-violet-200/90">
-                    {t("organizationItems.materials")}
-                  </p>
+                  <p className={subsectionLabelClass}>{t("organizationItems.materials")}</p>
                   <ul className="flex flex-col gap-1.5">
                     {materials.map((r) => (
-                      <li
-                        key={r.organization_item_id}
-                        className="flex items-center gap-2 rounded-lg bg-background/60 px-3 py-2 text-sm font-medium text-foreground backdrop-blur-sm dark:bg-black/20"
-                      >
-                        <MaterialGlyph className="h-4 w-4 shrink-0 text-secondary dark:text-violet-300" />
+                      <li key={r.organization_item_id} className={listRowClass}>
+                        <MaterialGlyph className="h-4 w-4 shrink-0 text-primary dark:text-blue-300" />
                         <span className="min-w-0 break-words">{r.organization_items.name}</span>
                       </li>
                     ))}

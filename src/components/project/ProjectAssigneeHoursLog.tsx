@@ -10,6 +10,8 @@ interface Props {
   userId: string;
   /** Used to anchor the week picker and dim days before the job’s scheduled reference. */
   scheduleReferenceIso: string | null;
+  /** Larger controls for installer /work flow. */
+  density?: "default" | "installer";
 }
 
 function getMonday(date: Date): Date {
@@ -39,7 +41,12 @@ function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-export default function ProjectAssigneeHoursLog({ projectId, userId, scheduleReferenceIso }: Props) {
+export default function ProjectAssigneeHoursLog({
+  projectId,
+  userId,
+  scheduleReferenceIso,
+  density = "default",
+}: Props) {
   const { t, locale } = useLocale();
   const localeCode = locale === "sv" ? "sv-SE" : "en-GB";
 
@@ -157,26 +164,36 @@ export default function ProjectAssigneeHoursLog({ projectId, userId, scheduleRef
     }
   }, [days, hours, savedHours, entryIds, projectId, userId, t]);
 
+  const isField = density === "installer";
+
   return (
-    <div className="rounded-xl border-border border-2 bg-surface px-4 py-3 flex flex-col gap-3">
-      <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-        {t("hoursLog.title")}
-      </p>
+    <div
+      className={
+        isField
+          ? "flex flex-col gap-4 rounded-2xl border-2 border-border bg-surface px-4 py-4"
+          : "flex flex-col gap-3 rounded-xl border border-border bg-surface px-4 py-4"
+      }
+    >
+      <p className="text-sm font-semibold uppercase tracking-wide text-muted">{t("hoursLog.title")}</p>
 
       {/* Week navigation */}
       <div className="flex items-center justify-between">
         <button
           onClick={handlePrevWeek}
-          className="rounded-lg p-1.5 text-muted hover:bg-muted-bg hover:text-foreground transition-colors"
+          className={
+            isField
+              ? "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl p-2 text-muted hover:bg-muted-bg hover:text-foreground transition-colors"
+              : "rounded-lg p-1.5 text-muted hover:bg-muted-bg hover:text-foreground transition-colors"
+          }
           aria-label={t("hoursLog.previousWeek")}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg xmlns="http://www.w3.org/2000/svg" className={isField ? "h-6 w-6" : "h-4 w-4"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
         <div className="flex flex-col items-center">
-          <span className="text-sm font-semibold text-foreground">
+          <span className={isField ? "text-base font-semibold text-foreground" : "text-sm font-semibold text-foreground"}>
             {t("hoursLog.weekLabel")} {weekNumber}
           </span>
           <span className="text-xs text-muted">{weekRangeLabel}</span>
@@ -184,17 +201,21 @@ export default function ProjectAssigneeHoursLog({ projectId, userId, scheduleRef
 
         <button
           onClick={handleNextWeek}
-          className="rounded-lg p-1.5 text-muted hover:bg-muted-bg hover:text-foreground transition-colors"
+          className={
+            isField
+              ? "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl p-2 text-muted hover:bg-muted-bg hover:text-foreground transition-colors"
+              : "rounded-lg p-1.5 text-muted hover:bg-muted-bg hover:text-foreground transition-colors"
+          }
           aria-label={t("hoursLog.nextWeek")}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg xmlns="http://www.w3.org/2000/svg" className={isField ? "h-6 w-6" : "h-4 w-4"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
 
       {/* Day squares */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className={isField ? "grid grid-cols-7 gap-2" : "grid grid-cols-7 gap-1.5"}>
         {days.map((day, i) => {
           const key = toDateKey(day);
           const dayLabel = day.toLocaleDateString(localeCode, { weekday: "short" });
@@ -208,6 +229,7 @@ export default function ProjectAssigneeHoursLog({ projectId, userId, scheduleRef
               key={key}
               className={[
                 "flex flex-col items-center gap-1.5 rounded-lg px-1 py-2 transition-colors",
+                isField ? "min-h-[88px]" : "",
                 isToday
                   ? "bg-primary/10 ring-2 ring-primary"
                   : isDimmed
@@ -216,7 +238,7 @@ export default function ProjectAssigneeHoursLog({ projectId, userId, scheduleRef
               ].join(" ")}
             >
               <span className={[
-                "text-xs font-medium capitalize",
+                isField ? "text-sm font-medium capitalize" : "text-xs font-medium capitalize",
                 isToday ? "text-primary font-bold" : "text-muted",
               ].join(" ")}>
                 {dayLabel}
@@ -229,7 +251,11 @@ export default function ProjectAssigneeHoursLog({ projectId, userId, scheduleRef
                 value={hours[key] ?? ""}
                 onChange={(e) => handleHoursChange(key, e.target.value)}
                 placeholder="0"
-                className="w-full rounded-md border border-border bg-surface text-center text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className={
+                  isField
+                    ? "min-h-11 w-full rounded-lg border-2 border-border bg-surface text-center text-base font-medium text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    : "w-full rounded-md border border-border bg-surface text-center text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                }
               />
             </div>
           );
@@ -242,13 +268,14 @@ export default function ProjectAssigneeHoursLog({ projectId, userId, scheduleRef
 
       {/* Save button */}
       <Button
-        size="sm"
+        size={isField ? "lg" : "sm"}
         color="primary"
         variant="flat"
         isDisabled={!isDirty || isSaving || isLoading}
         isLoading={isSaving}
         onPress={handleSave}
         fullWidth
+        className={isField ? "min-h-12 font-semibold" : undefined}
       >
         {t("hoursLog.saveWeek")}
       </Button>

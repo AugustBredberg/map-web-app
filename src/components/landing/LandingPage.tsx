@@ -26,7 +26,7 @@ export default function LandingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { session, systemRole, signupSource, loading: authLoading } = useAuth();
-  const { organizations, loading: orgLoading } = useOrg();
+  const { organizations, loading: orgLoading, activeRole } = useOrg();
   const { t } = useLocale();
 
   const mode: AuthMode =
@@ -46,7 +46,11 @@ export default function LandingPage() {
       return;
     }
     if (organizations.length > 0) {
-      router.replace("/map");
+      if (activeRole === "member") {
+        router.replace("/work");
+      } else {
+        router.replace("/map");
+      }
       return;
     }
     if (signupSource === "self_serve") {
@@ -54,7 +58,7 @@ export default function LandingPage() {
       return;
     }
     router.replace("/onboarding/no-organization");
-  }, [session, authLoading, orgLoading, systemRole, signupSource, organizations.length, router]);
+  }, [session, authLoading, orgLoading, systemRole, signupSource, organizations.length, activeRole, router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

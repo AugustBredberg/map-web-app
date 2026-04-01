@@ -23,6 +23,7 @@ import { hasMinRole } from "@/lib/supabase";
 import ProjectStatusTransitions from "@/components/project/ProjectStatusTransitions";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import MapNavigateModal from "@/components/navigation/MapNavigateModal";
+import AdminPanelSection from "@/components/project/AdminPanelSection";
 import ProjectHighlightedInstructions from "@/components/project/ProjectHighlightedInstructions";
 import ProjectSiteAndContactCard from "@/components/project/ProjectSiteAndContactCard";
 import ProjectCommentsSection from "@/components/project/ProjectCommentsSection";
@@ -76,7 +77,11 @@ function PencilIcon() {
   );
 }
 
-export default function ProjectDetailsPanel({ project, onProjectUpdated, onProjectDeleted }: Props) {
+export default function ProjectDetailsPanel({
+  project,
+  onProjectUpdated,
+  onProjectDeleted,
+}: Props) {
   const { t, locale } = useLocale();
   const { session, systemRole } = useAuth();
   const { activeRole, activeOrg } = useOrg();
@@ -336,7 +341,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
   const hasInstructions = trimmedDescription.length > 0;
 
   return (
-    <div className="flex w-full max-w-xl flex-col gap-6">
+    <div className="flex w-full max-w-3xl flex-col gap-5 text-sm">
       {/* Job title */}
       {editingField === "title" ? (
         <div className="flex flex-col gap-2">
@@ -360,7 +365,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         </div>
       ) : (
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-bold leading-snug text-foreground">{currentTitle}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">{currentTitle}</h2>
           {canEdit && (
             <Button
               isIconOnly
@@ -376,10 +381,14 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         </div>
       )}
 
+      <p className="text-xs text-muted">
+        {t("projectDetails.created")} {formatCreated(liveProject.created_at, locale)}
+      </p>
+
       {/* Special instructions — first thing installers must see */}
       {editingField === "description" ? (
-        <div className="flex flex-col gap-2 rounded-2xl border-2 border-border bg-surface p-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted">{t("projectDetails.description")}</p>
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted">{t("projectDetails.description")}</p>
           <Textarea
             value={draftDescription}
             onValueChange={setDraftDescription}
@@ -401,6 +410,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         </div>
       ) : hasInstructions ? (
         <ProjectHighlightedInstructions
+          variant="admin"
           body={trimmedDescription}
           title={t("projectDetails.instructionsTitle")}
           subtitle={t("projectDetails.instructionsSubtitle")}
@@ -408,9 +418,9 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
             canEdit ? (
               <Button
                 isIconOnly
-                variant="flat"
+                variant="light"
                 size="sm"
-                className="text-amber-900 dark:text-amber-100"
+                className="text-muted"
                 onPress={() => startEdit("description", assigneeData)}
                 aria-label={t("projectDetails.editDescription")}
               >
@@ -423,22 +433,12 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         <Button
           fullWidth
           variant="bordered"
-          className="h-auto min-h-12 !whitespace-normal border-dashed px-4 py-3 text-left font-semibold leading-snug break-words [align-items:stretch] [justify-content:center]"
+          className="h-auto min-h-12 !whitespace-normal rounded-xl border-dashed border-border px-4 py-3 text-left font-semibold leading-snug break-words bg-surface [align-items:stretch] [justify-content:center]"
           onPress={() => startEdit("description", assigneeData)}
         >
           {t("projectDetails.adminInstructionsHint")}
         </Button>
       ) : null}
-
-      {activeOrg && (
-        <ProjectJobItemsSection
-          key={`tools-${project.project_id}`}
-          projectId={project.project_id}
-          organizationId={activeOrg.organization_id}
-          isAdmin={isAdmin}
-          t={t}
-        />
-      )}
 
       <ProjectSiteAndContactCard
         siteName={loc?.name ?? null}
@@ -457,18 +457,33 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         addressFallback={addressText || null}
       />
 
-      <section className="rounded-2xl border-2 border-border bg-surface p-4 shadow-sm">
+      <AdminPanelSection title={t("projectDetails.adminWorkflow")}>
         <ProjectStatusTransitions currentStatus={currentStatus} onTransition={handleTransition} isLoading={isTransitioning} />
         {transitionError && (
-          <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-300">
+          <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-300">
             {transitionError}
           </p>
         )}
-      </section>
+      </AdminPanelSection>
 
       {/* Schedule */}
-      <div className="rounded-2xl border-2 border-border bg-surface px-4 py-3">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">{t("schedule.sectionLabel")}</p>
+      <AdminPanelSection
+        title={t("schedule.sectionLabel")}
+        actions={
+          canEdit && editingField !== "schedule" ? (
+            <Button
+              isIconOnly
+              variant="light"
+              size="sm"
+              className="text-muted"
+              onPress={() => startEdit("schedule", assigneeData)}
+              aria-label={t("projectDetails.editSchedule")}
+            >
+              <PencilIcon />
+            </Button>
+          ) : null
+        }
+      >
         {editingField === "schedule" ? (
           <>
             <div className="flex flex-wrap gap-2">
@@ -575,27 +590,15 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
                 )}
               </div>
             </div>
-            {canEdit && (
-              <Button
-                isIconOnly
-                variant="light"
-                size="sm"
-                className="shrink-0 text-muted"
-                onPress={() => startEdit("schedule", assigneeData)}
-                aria-label={t("projectDetails.editSchedule")}
-              >
-                <PencilIcon />
-              </Button>
-            )}
           </div>
         )}
-      </div>
+      </AdminPanelSection>
 
       {/* Assignees */}
-      <div>
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted">{t("projectDetails.assignedTo")}</p>
-          {canEdit && !assigneesLoading && (
+      <AdminPanelSection
+        title={t("projectDetails.assignedTo")}
+        actions={
+          canEdit && !assigneesLoading && editingField !== "assignees" ? (
             <Button
               isIconOnly
               variant="light"
@@ -606,8 +609,9 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
             >
               <PencilIcon />
             </Button>
-          )}
-        </div>
+          ) : null
+        }
+      >
         {assigneesLoading ? (
           <div className="flex flex-wrap gap-2 animate-pulse">
             {Array.from({ length: 2 }).map((_, i) => (
@@ -664,14 +668,27 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
             ))}
           </div>
         )}
-      </div>
+      </AdminPanelSection>
+
+      {activeOrg && (
+        <ProjectJobItemsSection
+          key={`tools-${project.project_id}`}
+          variant="admin"
+          projectId={project.project_id}
+          organizationId={activeOrg.organization_id}
+          isAdmin={isAdmin}
+          t={t}
+        />
+      )}
+
+      <AdminPanelSection title={t("projectDetails.photosTitle")}>
+        <ProjectPhotosMockSection embedded />
+      </AdminPanelSection>
 
       <ProjectCommentsSection key={`comments-${project.project_id}`} projectId={project.project_id} currentUserId={session?.user.id} />
 
-      <ProjectPhotosMockSection />
-
       {assigneesLoading ? (
-        <div className="rounded-2xl border-2 border-border bg-surface px-4 py-3 flex flex-col gap-3 animate-pulse">
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface px-4 py-4 animate-pulse">
           <div className="h-3 w-32 rounded bg-muted-bg" />
           <div className="flex justify-between items-center">
             <div className="h-4 w-4 rounded bg-muted-bg" />
@@ -725,10 +742,6 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
           {deleteError && <p className="mt-1 text-center text-xs text-red-500">{deleteError}</p>}
         </div>
       )}
-
-      <p className="text-center text-xs text-muted">
-        {t("projectDetails.created")} {formatCreated(liveProject.created_at, locale)}
-      </p>
 
       <ConfirmDialog
         isOpen={showCancelConfirm}

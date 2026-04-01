@@ -9,6 +9,16 @@ import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
 import { hasMinRole } from "@/lib/supabase";
 
+const workItem = {
+  labelKey: "nav.work",
+  href: "/work",
+  icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+  ),
+};
+
 const navItems = [
   {
     labelKey: "nav.map",
@@ -92,6 +102,11 @@ const expandIcon = (
   </svg>
 );
 
+/** Exact href match, or prefix match for nested routes (but not `/` as a prefix of everything). */
+function navLinkIsActive(pathname: string, href: string): boolean {
+  return pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+}
+
 export default function NavMenu({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -116,10 +131,9 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
 
   const settingsItem = navItems.find((item) => item.href === "/settings")!;
   const sidebarItems = navItems.filter((item) => item.href !== "/settings");
-  const allSidebarItems = showAdminNav
-    ? [...sidebarItems, customersItem, financialItem, toolsMaterialsItem]
-    : sidebarItems;
-  const mobilePrimaryAdmin = [navItems[0], navItems[1], customersItem, financialItem];
+  const adminExtras = showAdminNav ? [customersItem, financialItem, toolsMaterialsItem] : [];
+  const allSidebarItems = [workItem, ...sidebarItems, ...adminExtras];
+  const mobilePrimaryAdmin = [workItem, navItems[0], navItems[1], customersItem, financialItem];
   const moreMenuActive =
     pathname.startsWith("/settings") || pathname.startsWith("/tools-materials");
 
@@ -143,7 +157,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 px-2 py-4">
           <ul className="space-y-1">
             {allSidebarItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+              const isActive = navLinkIsActive(pathname, item.href);
               return (
                 <li key={item.href}>
                   <Link
@@ -208,7 +222,7 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
             ? (
               <>
                 {mobilePrimaryAdmin.map((item) => {
-                  const isActive = pathname.startsWith(item.href);
+                  const isActive = navLinkIsActive(pathname, item.href);
                   return (
                     <li key={item.href} className="flex min-w-0 flex-1">
                       <Link
@@ -262,8 +276,8 @@ export default function NavMenu({ children }: { children: React.ReactNode }) {
               </>
             )
             : (
-              navItems.map((item) => {
-                const isActive = pathname.startsWith(item.href);
+              [workItem, ...navItems].map((item) => {
+                const isActive = navLinkIsActive(pathname, item.href);
                 return (
                   <li key={item.href} className="flex min-w-0 flex-1">
                     <Link

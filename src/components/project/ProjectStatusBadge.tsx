@@ -1,12 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   type ProjectStatus,
   type StatusMeta,
   STATUS_META,
   STATUS_ICON_PATHS,
   STATUS_LABELS,
+  STATUS_SOLID_COLORS,
 } from "@/lib/projectStatus";
 import { useLocale } from "@/context/LocaleContext";
 export type { StatusMeta, ProjectStatus };
@@ -29,6 +30,13 @@ interface Props {
   onClick?: () => void;
   isDisabled?: boolean;
   className?: string;
+  /** Field / installer: one-line row; display mode is visually distinct from transition actions. */
+  compact?: boolean;
+}
+
+function labelMatchesDescription(label: string, description: string): boolean {
+  const n = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  return n(label) === n(description);
 }
 
 /**
@@ -42,6 +50,7 @@ export default function ProjectStatusBadge({
   onClick,
   isDisabled = false,
   className = "",
+  compact = false,
 }: Props) {
   const meta = STATUS_META[status];
   const { t } = useLocale();
@@ -50,26 +59,58 @@ export default function ProjectStatusBadge({
   const interactive = onClick !== undefined;
   // In display mode default to always selected; in interactive mode use the prop
   const active = isSelected ?? !interactive;
+  const showSubtitle = !compact && !labelMatchesDescription(label, description);
 
-  const base = "flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-colors";
-  const stateClasses = active
-    ? `${meta.border} ${meta.bg}`
-    : "border-border bg-surface hover:border-border hover:bg-muted-bg";
+  const accent = STATUS_SOLID_COLORS[status] ?? "#64748b";
+
+  const compactDisplayClass =
+    compact && !interactive
+      ? "flex items-center gap-2.5 rounded-lg border border-transparent bg-muted-bg/70 px-3 py-2.5 text-left ring-1 ring-inset ring-border/50"
+      : null;
+
+  const base = compact
+    ? interactive
+      ? "flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-left transition-colors border-l-[4px]"
+      : (compactDisplayClass ?? "")
+    : "flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-colors";
+  const stateClasses = compact
+    ? ""
+    : active
+      ? `${meta.border} ${meta.bg}`
+      : "border-border bg-surface hover:border-border hover:bg-muted-bg";
   const disabledClasses = isDisabled ? "cursor-not-allowed opacity-50" : interactive ? "cursor-pointer" : "";
 
   const content = (
     <>
-      <span className={active ? meta.iconColor : "text-muted"}>
-        {STATUS_ICONS[status]}
-      </span>
+      {!compact || interactive ? (
+        <span className={compact ? "text-muted" : active ? meta.iconColor : "text-muted"}>{STATUS_ICONS[status]}</span>
+      ) : (
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface shadow-inner ring-1 ring-border/60">
+          <span className="[&_svg]:h-5 [&_svg]:w-5" style={{ color: accent }}>
+            {STATUS_ICONS[status]}
+          </span>
+        </span>
+      )}
       <div className="min-w-0">
-        <p className={`text-sm font-semibold leading-tight ${active ? "text-foreground" : "text-muted"}`}>
+        <p
+          className={`text-sm leading-tight ${
+            compact && !interactive
+              ? "font-medium text-foreground"
+              : compact
+                ? "font-semibold text-foreground"
+                : active
+                  ? "font-semibold text-foreground"
+                  : "font-semibold text-muted"
+          }`}
+        >
           {label}
         </p>
-        <p className="truncate text-xs text-muted">{description}</p>
+        {showSubtitle ? <p className="truncate text-xs text-muted">{description}</p> : null}
       </div>
     </>
   );
+
+  const style: CSSProperties | undefined = compact && interactive ? { borderLeftColor: accent } : undefined;
 
   if (interactive) {
     return (
@@ -77,6 +118,7 @@ export default function ProjectStatusBadge({
         type="button"
         disabled={isDisabled}
         onClick={onClick}
+        style={style}
         className={[base, stateClasses, disabledClasses, className].filter(Boolean).join(" ")}
       >
         {content}
@@ -85,7 +127,7 @@ export default function ProjectStatusBadge({
   }
 
   return (
-    <div className={[base, stateClasses, className].filter(Boolean).join(" ")}>
+    <div role="status" style={style} className={[base, stateClasses, className].filter(Boolean).join(" ")}>
       {content}
     </div>
   );

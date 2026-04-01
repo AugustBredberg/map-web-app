@@ -17,10 +17,17 @@ function randomId() {
   return `mock-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+interface Props {
+  /** Omit outer section chrome when nested inside another panel (e.g. admin job details). */
+  embedded?: boolean;
+  /** `installer` = larger tap targets and field-style framing for /work. */
+  variant?: "default" | "installer";
+}
+
 /**
  * Placeholder UI for future on-site photo uploads. State is local only.
  */
-export default function ProjectPhotosMockSection() {
+export default function ProjectPhotosMockSection({ embedded = false, variant = "default" }: Props) {
   const { t } = useLocale();
   const labelId = useId();
   const [images, setImages] = useState<MockImage[]>([]);
@@ -59,19 +66,63 @@ export default function ProjectPhotosMockSection() {
 
   const fullscreenImage = fullscreenId ? images.find((i) => i.id === fullscreenId) : undefined;
 
+  const shell =
+    embedded
+      ? "space-y-3"
+      : variant === "installer"
+        ? "rounded-xl border border-border bg-surface p-4"
+        : "rounded-2xl border-2 border-dashed border-border bg-surface/80 p-4";
+
+  /** Only used when `variant !== "installer"` (installer uses the page-level section title). */
+  const headingClass = "text-xs font-bold uppercase tracking-widest text-muted";
+
+  const Root = embedded ? "div" : "section";
+
+  const installerOuterLabel = variant === "installer" && !embedded;
+
   return (
-    <section className="rounded-2xl border-2 border-dashed border-border bg-surface/80 p-4" aria-labelledby={labelId}>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 id={labelId} className="text-xs font-bold uppercase tracking-widest text-muted">
-            {t("projectDetails.photosTitle")}
-          </h3>
-          <p className="mt-1 text-xs text-muted">{t("projectDetails.photosMockHint")}</p>
+    <Root
+      className={shell}
+      aria-labelledby={embedded || installerOuterLabel ? undefined : labelId}
+      aria-label={installerOuterLabel ? t("projectDetails.photosTitle") : undefined}
+    >
+      {!embedded && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          {variant === "installer" ? (
+            <>
+              <p className="min-w-0 flex-1 text-sm text-foreground/80">{t("projectDetails.photosMockHint")}</p>
+              <Button
+                size="md"
+                color="primary"
+                variant="bordered"
+                className="min-h-11 shrink-0 font-semibold"
+                onPress={addMockPhoto}
+              >
+                {t("projectDetails.mockAddPhoto")}
+              </Button>
+            </>
+          ) : (
+            <>
+              <div>
+                <h3 id={labelId} className={headingClass}>
+                  {t("projectDetails.photosTitle")}
+                </h3>
+                <p className="mt-1 text-xs text-muted">{t("projectDetails.photosMockHint")}</p>
+              </div>
+              <Button size="sm" variant="bordered" className="font-semibold" onPress={addMockPhoto}>
+                {t("projectDetails.mockAddPhoto")}
+              </Button>
+            </>
+          )}
         </div>
-        <Button size="sm" variant="bordered" className="font-semibold" onPress={addMockPhoto}>
-          {t("projectDetails.mockAddPhoto")}
-        </Button>
-      </div>
+      )}
+      {embedded && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button size="sm" variant="bordered" onPress={addMockPhoto}>
+            {t("projectDetails.mockAddPhoto")}
+          </Button>
+        </div>
+      )}
 
       {images.length === 0 ? (
         <p className="text-sm text-muted">{t("projectDetails.photosEmpty")}</p>
@@ -142,6 +193,6 @@ export default function ProjectPhotosMockSection() {
           </div>
         ) : null}
       </FullscreenImageViewer>
-    </section>
+    </Root>
   );
 }

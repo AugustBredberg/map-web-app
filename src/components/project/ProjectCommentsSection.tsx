@@ -63,9 +63,13 @@ export default function ProjectCommentsSection({ projectId, currentUserId }: Pro
     setDraft("");
   };
 
+  const shell = "rounded-xl border border-border bg-surface p-4";
+  /** Aligned with Work section titles and AdminPanelSection. */
+  const headingClass = "mb-3 text-sm font-semibold uppercase tracking-wide text-muted";
+
   return (
-    <section className="rounded-2xl border-2 border-border bg-surface p-4 shadow-sm" aria-labelledby="project-comments-heading">
-      <h3 id="project-comments-heading" className="mb-3 text-xs font-bold uppercase tracking-widest text-muted">
+    <section className={shell} aria-labelledby="project-comments-heading">
+      <h3 id="project-comments-heading" className={headingClass}>
         {t("projectDetails.commentsTitle")}
       </h3>
 
@@ -84,7 +88,7 @@ export default function ProjectCommentsSection({ projectId, currentUserId }: Pro
             const isYou = currentUserId && c.created_by === currentUserId;
             const who = isYou ? t("projectDetails.commentYou") : c.author_display_name?.trim() || t("projectDetails.commentTeammate");
             return (
-              <li key={c.id} className="rounded-xl bg-muted-bg/60 px-3 py-2.5 dark:bg-muted-bg/30">
+              <li key={c.id} className="rounded-lg border border-border/60 bg-muted-bg px-3 py-2.5 dark:bg-muted-bg/40">
                 <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0">
                   <span className="text-sm font-semibold text-foreground">{who}</span>
                   <time className="text-xs text-muted" dateTime={c.created_at}>

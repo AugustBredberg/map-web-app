@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@heroui/react";
-import { STATUS_TRANSITIONS, STATUS_META, STATUS_SOLID_COLORS, type ProjectStatus } from "@/lib/projectStatus";
+import { STATUS_TRANSITIONS, STATUS_SOLID_COLORS, type ProjectStatus } from "@/lib/projectStatus";
 import { useLocale } from "@/context/LocaleContext";
 import ProjectStatusBadge from "@/components/project/ProjectStatusBadge";
 
@@ -9,6 +9,8 @@ interface Props {
   currentStatus: ProjectStatus;
   onTransition: (to: ProjectStatus) => void | Promise<void>;
   isLoading?: boolean;
+  /** When false, omits “Current status” / “What’s next” micro-labels (use when the page already has an `h2` above the card). */
+  showSectionLabels?: boolean;
 }
 
 function TransitionRow({
@@ -17,79 +19,60 @@ function TransitionRow({
   isLoading,
   onPress,
   actionLabel,
-  targetLabel,
-  statusDescription,
 }: {
   toStatus: ProjectStatus;
   isPrimary: boolean;
   isLoading: boolean;
   onPress: () => void;
   actionLabel: string;
-  targetLabel: string;
-  statusDescription: string;
 }) {
   const accent = STATUS_SOLID_COLORS[toStatus];
-  const meta = STATUS_META[toStatus];
 
   return (
     <div
       className={[
-        "relative overflow-hidden rounded-2xl border-2 text-left transition-transform active:scale-[0.99]",
-        isPrimary ? "border-border bg-surface shadow-md" : "border-border/80 bg-surface/90",
+        "relative overflow-hidden rounded-lg border border-border bg-surface text-left shadow-sm",
+        "transition-[box-shadow,transform,border-color] hover:shadow-md hover:border-primary/30",
+        "active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100 motion-reduce:hover:shadow-sm",
+        isPrimary ? "" : "opacity-95",
       ].join(" ")}
     >
-      <div className="absolute left-0 top-0 h-full w-1.5" style={{ backgroundColor: accent }} aria-hidden />
+      <div className="absolute left-0 top-0 h-full w-[4px]" style={{ backgroundColor: accent }} aria-hidden />
       <Button
         variant="light"
-        className="h-auto min-h-0 w-full justify-start gap-0 rounded-2xl px-4 py-4 pl-5 text-left"
+        className="h-auto min-h-[52px] w-full cursor-pointer justify-start rounded-lg px-4 py-3 pl-[18px] text-left hover:bg-primary/5"
         isLoading={isLoading}
         onPress={onPress}
       >
-        <div className="flex w-full flex-col gap-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <span
-              className={[
-                "min-w-0 text-base font-bold leading-snug",
-                isPrimary ? "text-foreground" : "text-foreground/90",
-              ].join(" ")}
-            >
-              {actionLabel}
-            </span>
-            <span
-              className={[
-                "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                meta.bg,
-                meta.iconColor,
-                "border",
-                meta.border,
-              ].join(" ")}
-            >
-              {targetLabel}
-            </span>
-          </div>
-          <p className="text-xs leading-relaxed text-muted">{statusDescription}</p>
+        <div className="flex w-full min-w-0 flex-col gap-0.5 text-left">
+          <span className="min-w-0 text-base font-semibold leading-snug text-foreground">{actionLabel}</span>
         </div>
       </Button>
     </div>
   );
 }
 
-export default function ProjectStatusTransitions({ currentStatus, onTransition, isLoading = false }: Props) {
+export default function ProjectStatusTransitions({
+  currentStatus,
+  onTransition,
+  isLoading = false,
+  showSectionLabels = true,
+}: Props) {
   const { t } = useLocale();
   const transitions = STATUS_TRANSITIONS[currentStatus] ?? [];
+  const labelClass = "text-[11px] font-semibold uppercase tracking-wider text-muted";
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-bold uppercase tracking-widest text-muted">{t("statusTransitions.whereYouAre")}</p>
-        <ProjectStatusBadge status={currentStatus} />
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        {showSectionLabels ? <p className={labelClass}>{t("statusTransitions.whereYouAre")}</p> : null}
+        <ProjectStatusBadge status={currentStatus} compact />
       </div>
 
       {transitions.length > 0 ? (
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">{t("statusTransitions.nextSteps")}</p>
-          <p className="mb-3 text-sm text-muted">{t("statusTransitions.nextStepsHint")}</p>
-          <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          {showSectionLabels ? <p className={labelClass}>{t("statusTransitions.nextSteps")}</p> : null}
+          <div className="flex flex-col gap-2">
             {transitions
               .filter((tr) => tr.primary)
               .map((transition) => (
@@ -100,8 +83,6 @@ export default function ProjectStatusTransitions({ currentStatus, onTransition, 
                   isLoading={!!isLoading}
                   onPress={() => onTransition(transition.to)}
                   actionLabel={t(`statusTransitions.${transition.labelKey}`)}
-                  targetLabel={t(`statusLabels.${transition.to}`)}
-                  statusDescription={t(`statusDescriptions.${transition.to}`)}
                 />
               ))}
             {transitions
@@ -114,8 +95,6 @@ export default function ProjectStatusTransitions({ currentStatus, onTransition, 
                   isLoading={!!isLoading}
                   onPress={() => onTransition(transition.to)}
                   actionLabel={t(`statusTransitions.${transition.labelKey}`)}
-                  targetLabel={t(`statusLabels.${transition.to}`)}
-                  statusDescription={t(`statusDescriptions.${transition.to}`)}
                 />
               ))}
           </div>

@@ -7,21 +7,45 @@ interface Props {
   title: string;
   subtitle: string;
   headerRight?: ReactNode;
+  /** `field` = high-visibility for installers; `admin` = neutral office UI. */
+  variant?: "field" | "admin";
 }
 
 /**
- * High-visibility callout for admin / customer instructions installers must see before working.
+ * Callout for job instructions — high-visibility in the field, restrained in admin views.
  */
-export default function ProjectHighlightedInstructions({ body, title, subtitle, headerRight }: Props) {
+export default function ProjectHighlightedInstructions({
+  body,
+  title,
+  subtitle,
+  headerRight,
+  variant = "field",
+}: Props) {
+  if (variant === "admin") {
+    return (
+      <section
+        className="rounded-xl border border-border bg-surface p-4"
+        aria-labelledby="project-instructions-heading"
+      >
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 id="project-instructions-heading" className="text-sm font-semibold uppercase tracking-wide text-muted">
+              {title}
+            </h3>
+            <p className="mt-1 text-xs text-muted">{subtitle}</p>
+          </div>
+          {headerRight ? <div className="shrink-0">{headerRight}</div> : null}
+        </div>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{body}</p>
+      </section>
+    );
+  }
+
   return (
     <section
       className="relative overflow-hidden rounded-2xl border border-amber-200/90 bg-amber-50/95 p-4 shadow-sm ring-1 ring-amber-950/[0.04] dark:border-amber-700/55 dark:bg-amber-950 dark:ring-0"
       aria-labelledby="project-instructions-heading"
     >
-      <div
-        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-300/15 dark:bg-amber-500/10"
-        aria-hidden
-      />
       <div className="relative flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-1 gap-2">
