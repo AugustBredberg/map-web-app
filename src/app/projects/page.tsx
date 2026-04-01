@@ -180,6 +180,12 @@ export default function ProjectsPage() {
                 <ProjectDetailsPanel
                   key={selectedProject.project_id}
                   project={selectedProject}
+                  onProjectUpdated={(updated) => {
+                    setSelectedProject(updated);
+                    setProjects((prev) =>
+                      prev.map((p) => (p.project_id === updated.project_id ? updated : p)),
+                    );
+                  }}
                   onProjectDeleted={(id) => {
                     setProjects((prev) => prev.filter((p) => p.project_id !== id));
                     setSelectedProject(null);

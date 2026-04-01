@@ -54,7 +54,10 @@ export type Project = {
   created_at: string;
   updated_at: string;
   created_by: string | null;
-  start_time: string | null;
+  schedule_kind: "asap" | "window" | "appointment";
+  schedule_window_start: string | null;
+  schedule_window_end: string | null;
+  schedule_appointment_at: string | null;
   project_status: number | null;
   title: string;
   description: string | null;

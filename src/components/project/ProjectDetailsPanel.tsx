@@ -2,7 +2,15 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button, Input, Textarea, Select, SelectItem, Chip, DatePicker } from "@heroui/react";
-import { CalendarDate, parseDate } from "@internationalized/date";
+import {
+  CalendarDate,
+  parseDate,
+  parseAbsoluteToLocal,
+  getLocalTimeZone,
+  toZoned,
+  today,
+  now,
+} from "@internationalized/date";
 import PersonChip from "@/components/project/PersonChip";
 
 import { getProjectAssignees, getOrgMembers, setProjectAssignees } from "@/lib/members";
@@ -20,9 +28,17 @@ import ProjectSiteAndContactCard from "@/components/project/ProjectSiteAndContac
 import ProjectCommentsSection from "@/components/project/ProjectCommentsSection";
 import ProjectJobItemsSection from "@/components/project/ProjectJobItemsSection";
 import ProjectPhotosMockSection from "@/components/project/ProjectPhotosMockSection";
+import AppointmentTimeInput from "@/components/project/AppointmentTimeInput";
 import { normalizeCustomerJoin } from "@/lib/projectDisplay";
 import { parseProjectCoordinates } from "@/lib/navigationUrls";
 import type { Project, OrganizationMember } from "@/lib/supabase";
+import {
+  buildScheduleRow,
+  formatScheduleShort,
+  getScheduleBadge,
+  getScheduleReferenceDate,
+  type ScheduleKind,
+} from "@/lib/projectSchedule";
 import type { ProjectStatus } from "@/lib/projectStatus";
 import { useLocale } from "@/context/LocaleContext";
 import type { Locale } from "@/lib/i18n";
@@ -31,15 +47,6 @@ interface Props {
   project: Project;
   onProjectUpdated?: (updated: Project) => void;
   onProjectDeleted?: (projectId: string) => void;
-}
-
-function formatDate(iso: string | null, locale: Locale) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString(locale === "sv" ? "sv-SE" : "en-GB", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function formatCreated(iso: string | null, locale: Locale) {
@@ -59,14 +66,7 @@ function isoToCalendarDate(iso: string | null): CalendarDate | null {
   }
 }
 
-function calendarDateToIso(date: CalendarDate, existingIso: string | null): string {
-  const existing = existingIso ? new Date(existingIso) : null;
-  const h = existing ? existing.getUTCHours() : 9;
-  const m = existing ? existing.getUTCMinutes() : 0;
-  return new Date(Date.UTC(date.year, date.month - 1, date.day, h, m)).toISOString();
-}
-
-type EditField = "title" | "startTime" | "assignees" | "description";
+type EditField = "title" | "schedule" | "assignees" | "description";
 
 function PencilIcon() {
   return (
@@ -89,7 +89,6 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
   } | null>(null);
   const [currentStatus, setCurrentStatus] = useState<ProjectStatus>((project.project_status ?? 0) as ProjectStatus);
   const [currentTitle, setCurrentTitle] = useState(project.title);
-  const [currentStartTime, setCurrentStartTime] = useState<string | null>(project.start_time);
   const [currentDescription, setCurrentDescription] = useState<string | null>(project.description);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionError, setTransitionError] = useState<string | null>(null);
@@ -104,14 +103,20 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
-  const [draftStartTime, setDraftStartTime] = useState<CalendarDate | null>(null);
+  const [draftScheduleKind, setDraftScheduleKind] = useState<ScheduleKind>("asap");
+  const [draftWindowStart, setDraftWindowStart] = useState<CalendarDate | null>(null);
+  const [draftWindowEnd, setDraftWindowEnd] = useState<CalendarDate | null>(null);
+  const [draftAppointment, setDraftAppointment] = useState<ReturnType<typeof parseAbsoluteToLocal> | null>(null);
   const [draftAssignees, setDraftAssignees] = useState<string[]>([]);
   const [draftDescription, setDraftDescription] = useState("");
   const [members, setMembers] = useState<OrganizationMember[]>([]);
 
+  /** Server-shaped row for display; updated on successful saves so UI stays correct when the parent keeps a stale prop (e.g. map drawer snapshot). */
+  const [liveProject, setLiveProject] = useState(project);
+
   useEffect(() => {
+    setLiveProject(project);
     setCurrentTitle(project.title);
-    setCurrentStartTime(project.start_time);
     setCurrentDescription(project.description);
     setCurrentStatus((project.project_status ?? 0) as ProjectStatus);
     setEditingField(null);
@@ -157,6 +162,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         return;
       }
       setCurrentStatus(to);
+      setLiveProject(data);
       onProjectUpdated?.(data);
     },
     [project.project_id, onProjectUpdated, t],
@@ -172,6 +178,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
       return;
     }
     setCurrentStatus(6);
+    setLiveProject(data);
     onProjectUpdated?.(data);
   }, [project.project_id, onProjectUpdated, t]);
 
@@ -179,12 +186,36 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
     (field: EditField, currentAssigneeData: { id: string; name: string }[]) => {
       setSaveError(null);
       if (field === "title") setDraftTitle(currentTitle);
-      if (field === "startTime") setDraftStartTime(isoToCalendarDate(currentStartTime));
+      if (field === "schedule") {
+        const k = (liveProject.schedule_kind ?? "asap") as ScheduleKind;
+        setDraftScheduleKind(k);
+        setDraftWindowStart(isoToCalendarDate(liveProject.schedule_window_start));
+        setDraftWindowEnd(isoToCalendarDate(liveProject.schedule_window_end));
+        setDraftAppointment(
+          liveProject.schedule_appointment_at ? parseAbsoluteToLocal(liveProject.schedule_appointment_at) : null,
+        );
+      }
       if (field === "assignees") setDraftAssignees(currentAssigneeData.map((a) => a.id));
       if (field === "description") setDraftDescription(currentDescription ?? "");
       setEditingField(field);
     },
-    [currentTitle, currentStartTime, currentDescription],
+    [currentTitle, currentDescription, liveProject],
+  );
+
+  const onDraftScheduleKindPress = useCallback(
+    (k: ScheduleKind) => {
+      setDraftScheduleKind(k);
+      const tz = getLocalTimeZone();
+      if (k === "window" && !draftWindowStart) {
+        const t = today(tz);
+        setDraftWindowStart(t);
+        setDraftWindowEnd(t.add({ days: 2 }));
+      }
+      if (k === "appointment" && !draftAppointment) {
+        setDraftAppointment(now(tz).set({ hour: 9, minute: 0, second: 0, millisecond: 0 }));
+      }
+    },
+    [draftWindowStart, draftAppointment],
   );
 
   const cancelEdit = useCallback(() => {
@@ -204,25 +235,33 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
       return;
     }
     setCurrentTitle(data.title);
+    setLiveProject(data);
     updateTitle(data.title);
     onProjectUpdated?.(data);
     setEditingField(null);
   }, [draftTitle, project.project_id, updateTitle, onProjectUpdated, t]);
 
-  const handleSaveStartTime = useCallback(async () => {
+  const handleSaveSchedule = useCallback(async () => {
     setIsSaving(true);
     setSaveError(null);
-    const newStartTime = draftStartTime ? calendarDateToIso(draftStartTime, currentStartTime) : null;
-    const { data, error } = await updateProject(project.project_id, { start_time: newStartTime });
+    let row;
+    try {
+      row = buildScheduleRow(draftScheduleKind, draftWindowStart, draftWindowEnd, draftAppointment);
+    } catch {
+      setIsSaving(false);
+      setSaveError(t("projectDetails.failedToSave"));
+      return;
+    }
+    const { data, error } = await updateProject(project.project_id, row);
     setIsSaving(false);
     if (error || !data) {
       setSaveError(error ?? t("projectDetails.failedToSave"));
       return;
     }
-    setCurrentStartTime(data.start_time);
+    setLiveProject(data);
     onProjectUpdated?.(data);
     setEditingField(null);
-  }, [draftStartTime, currentStartTime, project.project_id, onProjectUpdated, t]);
+  }, [draftScheduleKind, draftWindowStart, draftWindowEnd, draftAppointment, project.project_id, onProjectUpdated, t]);
 
   const handleSaveAssignees = useCallback(async () => {
     if (!activeOrg) return;
@@ -252,6 +291,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
       return;
     }
     setCurrentDescription(data.description);
+    setLiveProject(data);
     onProjectUpdated?.(data);
     setEditingField(null);
   }, [draftDescription, project.project_id, onProjectUpdated, t]);
@@ -269,14 +309,23 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
     onProjectDeleted?.(project.project_id);
   }, [project.project_id, onProjectDeleted, t]);
 
-  const startDate = formatDate(currentStartTime, locale);
+  const scheduleLocale = locale === "sv" ? "sv-SE" : "en-GB";
+  const scheduleSummary = formatScheduleShort(liveProject, scheduleLocale, t("schedule.kind.asap"));
+  const scheduleBadge = getScheduleBadge(liveProject);
+  const scheduleDraftValid =
+    draftScheduleKind === "asap" ||
+    (draftScheduleKind === "window" &&
+      draftWindowStart !== null &&
+      draftWindowEnd !== null &&
+      draftWindowEnd.compare(draftWindowStart) >= 0) ||
+    (draftScheduleKind === "appointment" && draftAppointment !== null);
   const isCancelled = currentStatus === 6;
   const isAssignee = !!session && assigneeData.some((a) => a.id === session.user.id);
   const canEdit = isAdmin && editingField === null;
   const canDelete = (isAdmin || systemRole === "dev") && editingField === null;
 
-  const customer = normalizeCustomerJoin(project);
-  const loc = project.customer_location;
+  const customer = normalizeCustomerJoin(liveProject);
+  const loc = liveProject.customer_location;
   const coordsParsed = parseProjectCoordinates(loc?.location?.coordinates ?? null);
   const addressText = loc?.address?.trim() ?? "";
   const canNavigate = Boolean(coordsParsed || addressText);
@@ -417,22 +466,87 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
         )}
       </section>
 
-      {/* Scheduled date */}
+      {/* Schedule */}
       <div className="rounded-2xl border-2 border-border bg-surface px-4 py-3">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">{t("createProject.startTime")}</p>
-        {editingField === "startTime" ? (
+        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">{t("schedule.sectionLabel")}</p>
+        {editingField === "schedule" ? (
           <>
-            <DatePicker
-              aria-label={t("projectDetails.editStartTime")}
-              variant="bordered"
-              showMonthAndYearPickers
-              granularity="day"
-              value={draftStartTime}
-              onChange={(value) => setDraftStartTime(value ? new CalendarDate(value.year, value.month, value.day) : null)}
-              isDisabled={isSaving}
-            />
-            <div className="mt-2 flex gap-2">
-              <Button size="sm" color="primary" isLoading={isSaving} onPress={handleSaveStartTime}>
+            <div className="flex flex-wrap gap-2">
+              {(["asap", "window", "appointment"] as const).map((k) => (
+                <Button
+                  key={k}
+                  size="sm"
+                  variant={draftScheduleKind === k ? "solid" : "bordered"}
+                  color={draftScheduleKind === k ? "primary" : "default"}
+                  className="min-w-0 flex-1"
+                  onPress={() => onDraftScheduleKindPress(k)}
+                  isDisabled={isSaving}
+                >
+                  {t(`schedule.kind.${k}`)}
+                </Button>
+              ))}
+            </div>
+            {draftScheduleKind === "window" && (
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <DatePicker
+                  label={t("schedule.windowFrom")}
+                  variant="bordered"
+                  showMonthAndYearPickers
+                  granularity="day"
+                  value={draftWindowStart}
+                  onChange={(v) => setDraftWindowStart(v ? new CalendarDate(v.year, v.month, v.day) : null)}
+                  isDisabled={isSaving}
+                  className="flex-1"
+                />
+                <DatePicker
+                  label={t("schedule.windowTo")}
+                  variant="bordered"
+                  showMonthAndYearPickers
+                  granularity="day"
+                  value={draftWindowEnd}
+                  onChange={(v) => setDraftWindowEnd(v ? new CalendarDate(v.year, v.month, v.day) : null)}
+                  isDisabled={isSaving}
+                  className="flex-1"
+                />
+              </div>
+            )}
+            {draftScheduleKind === "appointment" && draftAppointment && (
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <DatePicker
+                  label={t("schedule.appointmentDate")}
+                  variant="bordered"
+                  showMonthAndYearPickers
+                  granularity="day"
+                  value={new CalendarDate(draftAppointment.year, draftAppointment.month, draftAppointment.day)}
+                  onChange={(v) => {
+                    if (!v) {
+                      setDraftAppointment(null);
+                      return;
+                    }
+                    const d = new CalendarDate(v.year, v.month, v.day);
+                    const h = draftAppointment.hour;
+                    const m = draftAppointment.minute;
+                    setDraftAppointment(toZoned(d, getLocalTimeZone()).set({ hour: h, minute: m, second: 0, millisecond: 0 }));
+                  }}
+                  isDisabled={isSaving}
+                  className="flex-1"
+                />
+                <AppointmentTimeInput
+                  label={t("schedule.appointmentTime")}
+                  value={draftAppointment}
+                  onChange={setDraftAppointment}
+                  isDisabled={isSaving}
+                />
+              </div>
+            )}
+            <div className="mt-3 flex gap-2">
+              <Button
+                size="sm"
+                color="primary"
+                isLoading={isSaving}
+                isDisabled={!scheduleDraftValid}
+                onPress={handleSaveSchedule}
+              >
                 {t("projectDetails.save")}
               </Button>
               <Button size="sm" variant="light" onPress={cancelEdit} isDisabled={isSaving}>
@@ -443,15 +557,23 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
           </>
         ) : (
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm min-w-0">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {startDate ? (
-                <span className="text-base font-semibold text-foreground">{startDate}</span>
-              ) : (
-                <span className="text-muted">{t("projectDetails.noStartTime")}</span>
-              )}
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-base font-semibold text-foreground">{scheduleSummary}</span>
+                {scheduleBadge === "overdueWindow" && (
+                  <Chip size="sm" color="danger" variant="flat">
+                    {t("schedule.badge.overdueWindow")}
+                  </Chip>
+                )}
+                {scheduleBadge === "pastAppointment" && (
+                  <Chip size="sm" color="warning" variant="flat">
+                    {t("schedule.badge.pastAppointment")}
+                  </Chip>
+                )}
+              </div>
             </div>
             {canEdit && (
               <Button
@@ -459,8 +581,8 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
                 variant="light"
                 size="sm"
                 className="shrink-0 text-muted"
-                onPress={() => startEdit("startTime", assigneeData)}
-                aria-label={t("projectDetails.editStartTime")}
+                onPress={() => startEdit("schedule", assigneeData)}
+                aria-label={t("projectDetails.editSchedule")}
               >
                 <PencilIcon />
               </Button>
@@ -564,7 +686,11 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
           <div className="h-8 rounded-lg bg-muted-bg" />
         </div>
       ) : isAssignee && session ? (
-        <ProjectAssigneeHoursLog projectId={project.project_id} userId={session.user.id} startTime={currentStartTime} />
+        <ProjectAssigneeHoursLog
+          projectId={project.project_id}
+          userId={session.user.id}
+          scheduleReferenceIso={getScheduleReferenceDate(liveProject).toISOString()}
+        />
       ) : null}
 
       {!isCancelled && isAdmin && (
@@ -601,7 +727,7 @@ export default function ProjectDetailsPanel({ project, onProjectUpdated, onProje
       )}
 
       <p className="text-center text-xs text-muted">
-        {t("projectDetails.created")} {formatCreated(project.created_at, locale)}
+        {t("projectDetails.created")} {formatCreated(liveProject.created_at, locale)}
       </p>
 
       <ConfirmDialog

@@ -8,7 +8,8 @@ import { getTimeLogEntries, upsertTimeLogEntry, deleteTimeLogEntry } from "@/lib
 interface Props {
   projectId: string;
   userId: string;
-  startTime: string | null;
+  /** Used to anchor the week picker and dim days before the job’s scheduled reference. */
+  scheduleReferenceIso: string | null;
 }
 
 function getMonday(date: Date): Date {
@@ -38,12 +39,12 @@ function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-export default function ProjectAssigneeHoursLog({ projectId, userId, startTime }: Props) {
+export default function ProjectAssigneeHoursLog({ projectId, userId, scheduleReferenceIso }: Props) {
   const { t, locale } = useLocale();
   const localeCode = locale === "sv" ? "sv-SE" : "en-GB";
 
   const [weekStart, setWeekStart] = useState<Date>(() =>
-    getMonday(startTime ? new Date(startTime) : new Date()),
+    getMonday(scheduleReferenceIso ? new Date(scheduleReferenceIso) : new Date()),
   );
   const [hours, setHours] = useState<Record<string, string>>({});
   const [savedHours, setSavedHours] = useState<Record<string, string>>({});
@@ -56,7 +57,7 @@ export default function ProjectAssigneeHoursLog({ projectId, userId, startTime }
   today.setHours(0, 0, 0, 0);
   const todayKey = toDateKey(today);
 
-  const projectStart = startTime ? new Date(startTime) : null;
+  const projectStart = scheduleReferenceIso ? new Date(scheduleReferenceIso) : null;
   if (projectStart) projectStart.setHours(0, 0, 0, 0);
 
   const weekNumber = getISOWeekNumber(weekStart);

@@ -1,11 +1,12 @@
 import { supabase } from "@/lib/supabase";
 import type { Project } from "@/lib/supabase";
 import { replaceProjectItems } from "@/lib/organizationItems";
+import { projectMatchesTodaysJobsFilter } from "@/lib/projectSchedule";
 
 type DbClient = typeof supabase;
 
 const PROJECT_FIELDS =
-  "project_id, created_at, updated_at, created_by, organization_id, title, description, project_status, start_time, customer_id, customer_location_id, customer:customers!customer_id(name, phone, email), customer_location:customer_locations!customer_location_id(name, address, location)";
+  "project_id, created_at, updated_at, created_by, organization_id, title, description, project_status, schedule_kind, schedule_window_start, schedule_window_end, schedule_appointment_at, customer_id, customer_location_id, customer:customers!customer_id(name, phone, email), customer_location:customer_locations!customer_location_id(name, address, location)";
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -32,15 +33,8 @@ export async function fetchProjects(
     .select(selectFields)
     .eq("organization_id", orgId);
 
-  if (filters.timeFilter === "today") {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    query = query
-      .gte("start_time", start.toISOString())
-      .lt("start_time", end.toISOString());
-  }
+  // "Today's jobs" is schedule-aware (ASAP always, windows overlapping today, appointments today).
+  // Applied client-side after fetch — see below.
 
   if (filters.statusFilters.length > 0) {
     query = query.in("project_status", filters.statusFilters);
@@ -51,7 +45,14 @@ export async function fetchProjects(
   }
 
   const { data, error } = await query;
-  return { data: data as Project[] | null, error: error?.message ?? null };
+  if (error) return { data: null, error: error.message };
+
+  let rows = data as unknown as Project[] | null;
+  if (filters.timeFilter === "today" && rows) {
+    rows = rows.filter((p) => projectMatchesTodaysJobsFilter(p));
+  }
+
+  return { data: rows, error: null };
 }
 
 // ---------------------------------------------------------------------------
@@ -62,7 +63,10 @@ export interface CreateProjectInput {
   title: string;
   description: string | null;
   project_status: number;
-  start_time: string | null;
+  schedule_kind: "asap" | "window" | "appointment";
+  schedule_window_start: string | null;
+  schedule_window_end: string | null;
+  schedule_appointment_at: string | null;
   customer_id: string;
   customer_location_id: string;
   organization_id: string | null;
@@ -117,7 +121,10 @@ export async function createProject(
 export interface UpdateProjectInput {
   title?: string;
   description?: string | null;
-  start_time?: string | null;
+  schedule_kind?: "asap" | "window" | "appointment";
+  schedule_window_start?: string | null;
+  schedule_window_end?: string | null;
+  schedule_appointment_at?: string | null;
 }
 
 export async function updateProject(

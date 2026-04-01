@@ -8,9 +8,10 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { type ZonedDateTime } from "@internationalized/date";
+import { type ZonedDateTime, type CalendarDate } from "@internationalized/date";
 import type { Project, Customer, CustomerLocation } from "@/lib/supabase";
 import { createProject } from "@/lib/projects";
+import { buildScheduleRow, type ScheduleKind } from "@/lib/projectSchedule";
 import { createCustomer } from "@/lib/customers";
 import { createCustomerLocation } from "@/lib/customerLocations";
 import { useOrg } from "@/context/OrgContext";
@@ -51,8 +52,14 @@ interface NewProjectContextValue {
   setDescription: (d: string) => void;
   projectStatus: ProjectStatus;
   setProjectStatus: (status: ProjectStatus) => void;
-  startTime: ZonedDateTime | null;
-  setStartTime: (t: ZonedDateTime | null) => void;
+  scheduleKind: ScheduleKind;
+  setScheduleKind: (k: ScheduleKind) => void;
+  windowStart: CalendarDate | null;
+  setWindowStart: (d: CalendarDate | null) => void;
+  windowEnd: CalendarDate | null;
+  setWindowEnd: (d: CalendarDate | null) => void;
+  appointmentAt: ZonedDateTime | null;
+  setAppointmentAt: (t: ZonedDateTime | null) => void;
   assignees: string[];
   setAssignees: (ids: string[]) => void;
   selectedOrganizationItemIds: string[];
@@ -92,8 +99,14 @@ const NewProjectContext = createContext<NewProjectContextValue>({
   setDescription: () => {},
   projectStatus: 0,
   setProjectStatus: () => {},
-  startTime: null,
-  setStartTime: () => {},
+  scheduleKind: "asap",
+  setScheduleKind: () => {},
+  windowStart: null,
+  setWindowStart: () => {},
+  windowEnd: null,
+  setWindowEnd: () => {},
+  appointmentAt: null,
+  setAppointmentAt: () => {},
   assignees: [],
   setAssignees: () => {},
   selectedOrganizationItemIds: [],
@@ -146,7 +159,10 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [projectStatus, setProjectStatus] = useState<ProjectStatus>(0);
-  const [startTime, setStartTime] = useState<ZonedDateTime | null>(null);
+  const [scheduleKind, setScheduleKind] = useState<ScheduleKind>("asap");
+  const [windowStart, setWindowStart] = useState<CalendarDate | null>(null);
+  const [windowEnd, setWindowEnd] = useState<CalendarDate | null>(null);
+  const [appointmentAt, setAppointmentAt] = useState<ZonedDateTime | null>(null);
   const [assignees, setAssignees] = useState<string[]>([]);
   const [selectedOrganizationItemIds, setSelectedOrganizationItemIds] = useState<string[]>([]);
   const [isWorking, setIsWorking] = useState(false);
@@ -169,7 +185,10 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setTitle("");
     setDescription("");
     setProjectStatus(0);
-    setStartTime(null);
+    setScheduleKind("asap");
+    setWindowStart(null);
+    setWindowEnd(null);
+    setAppointmentAt(null);
     setAssignees([]);
     setSelectedOrganizationItemIds([]);
     setIsWorking(false);
@@ -287,12 +306,22 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
     setIsWorking(true);
     setSaveError(null);
 
+    let scheduleRow;
+    try {
+      scheduleRow = buildScheduleRow(scheduleKind, windowStart, windowEnd, appointmentAt);
+    } catch {
+      setSaveError("Invalid schedule");
+      setStep("details");
+      setIsWorking(false);
+      return;
+    }
+
     const { data: project, error } = await createProject(
       {
         title,
         description: description.trim() || null,
         project_status: projectStatus,
-        start_time: startTime ? startTime.toDate().toISOString() : null,
+        ...scheduleRow,
         customer_id: selectedCustomer.customer_id,
         customer_location_id: selectedLocation.customer_location_id,
         organization_id: activeOrg?.organization_id ?? null,
@@ -310,7 +339,21 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
 
     resetAll();
     if (project) onProjectSavedRef.current?.(project);
-  }, [selectedCustomer, selectedLocation, title, description, projectStatus, startTime, assignees, selectedOrganizationItemIds, activeOrg, resetAll]);
+  }, [
+    selectedCustomer,
+    selectedLocation,
+    title,
+    description,
+    projectStatus,
+    scheduleKind,
+    windowStart,
+    windowEnd,
+    appointmentAt,
+    assignees,
+    selectedOrganizationItemIds,
+    activeOrg,
+    resetAll,
+  ]);
 
   return (
     <NewProjectContext.Provider
@@ -327,8 +370,14 @@ export function NewProjectProvider({ children }: { children: ReactNode }) {
         setDescription,
         projectStatus,
         setProjectStatus,
-        startTime,
-        setStartTime,
+        scheduleKind,
+        setScheduleKind,
+        windowStart,
+        setWindowStart,
+        windowEnd,
+        setWindowEnd,
+        appointmentAt,
+        setAppointmentAt,
         assignees,
         setAssignees,
         selectedOrganizationItemIds,

@@ -1,13 +1,18 @@
 import { supabase } from "@/lib/supabase";
-import type { Customer, DbClient } from "@/lib/supabase";
+import type { Customer, DbClient, Project } from "@/lib/supabase";
 import { CUSTOMER_FIELDS } from "@/lib/customers";
 import { getOrgMembers } from "@/lib/members";
+import { compareProjectsDispatchOrder } from "@/lib/projectSchedule";
 
 const PROJECT_OVERVIEW_FIELDS = [
   "project_id",
   "title",
   "project_status",
-  "start_time",
+  "created_at",
+  "schedule_kind",
+  "schedule_window_start",
+  "schedule_window_end",
+  "schedule_appointment_at",
   "customer_id",
   "customer_location_id",
   "customer_location:customer_locations!customer_location_id(name, address)",
@@ -24,7 +29,11 @@ export type OverviewProject = {
   project_id: string;
   title: string;
   project_status: number | null;
-  start_time: string | null;
+  created_at: string;
+  schedule_kind: "asap" | "window" | "appointment";
+  schedule_window_start: string | null;
+  schedule_window_end: string | null;
+  schedule_appointment_at: string | null;
   customer_id: string;
   customer_location_id: string;
   customer_location: { name: string; address: string | null } | null;
@@ -38,7 +47,11 @@ export type CustomerOverviewRow = {
     project_id: string;
     title: string;
     project_status: number | null;
-    start_time: string | null;
+    created_at: string;
+    schedule_kind: "asap" | "window" | "appointment";
+    schedule_window_start: string | null;
+    schedule_window_end: string | null;
+    schedule_appointment_at: string | null;
     siteLabel: string;
     assigneeUserIds: string[];
     hoursByUserId: Map<string, number>;
@@ -163,18 +176,20 @@ export async function fetchCustomerOverviewData(
         project_id: proj.project_id,
         title: proj.title ?? "",
         project_status: proj.project_status,
-        start_time: proj.start_time,
+        created_at: proj.created_at,
+        schedule_kind: proj.schedule_kind,
+        schedule_window_start: proj.schedule_window_start,
+        schedule_window_end: proj.schedule_window_end,
+        schedule_appointment_at: proj.schedule_appointment_at,
         siteLabel: siteLabelForProject(proj),
         assigneeUserIds,
         hoursByUserId: new Map(hoursMap),
       };
     });
 
-    mappedProjects.sort((a, b) => {
-      const ta = a.start_time ? new Date(a.start_time).getTime() : 0;
-      const tb = b.start_time ? new Date(b.start_time).getTime() : 0;
-      return tb - ta;
-    });
+    mappedProjects.sort((a, b) =>
+      compareProjectsDispatchOrder(a as unknown as Project, b as unknown as Project),
+    );
 
     let loggedHoursTotal = 0;
     for (const mp of mappedProjects) {

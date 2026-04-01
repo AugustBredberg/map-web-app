@@ -5,7 +5,10 @@ import type { Project } from "@/lib/supabase";
 import { STATUS_SOLID_COLORS } from "@/lib/projectStatus";
 import { useLocale } from "@/context/LocaleContext";
 import type { Locale } from "@/lib/i18n";
+import { Chip } from "@heroui/react";
+import { compareProjectsDispatchOrder, formatScheduleShort, getScheduleBadge } from "@/lib/projectSchedule";
 
+type SortMode = "dispatch" | "created";
 type SortDir = "desc" | "asc";
 
 function SortIcon({ dir }: { dir: SortDir }) {
@@ -22,15 +25,6 @@ function SortIcon({ dir }: { dir: SortDir }) {
 
 const LOCALE_CODE: Record<Locale, string> = { en: "en-GB", sv: "sv-SE" };
 
-function formatListDate(iso: string | null, locale: Locale) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString(LOCALE_CODE[locale], {
-    weekday: "short",
-    day: "numeric",
-    month: "long",
-  });
-}
-
 interface Props {
   projects: Project[];
   selectedProjectId: string | null;
@@ -38,10 +32,14 @@ interface Props {
 }
 
 export default function ProjectList({ projects, selectedProjectId, onSelect }: Props) {
+  const [sortMode, setSortMode] = useState<SortMode>("dispatch");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const { t, locale } = useLocale();
 
   const sorted = [...projects].sort((a, b) => {
+    if (sortMode === "dispatch") {
+      return compareProjectsDispatchOrder(a, b);
+    }
     const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
     const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
     return sortDir === "desc" ? tb - ta : ta - tb;
@@ -58,20 +56,43 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
   return (
     <div className="flex flex-col">
       {/* Sort bar */}
-      <div className="flex items-center justify-end px-3 py-1.5">
-        <button
-          className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-muted-bg hover:text-foreground"
-          onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-          aria-label={sortDir === "desc" ? t("projects.sortAscending") : t("projects.sortDescending")}
-        >
-          <SortIcon dir={sortDir} />
-          {sortDir === "desc" ? t("projects.newestFirst") : t("projects.oldestFirst")}
-        </button>
+      <div className="flex flex-wrap items-center justify-end gap-2 px-3 py-1.5">
+        <div className="flex rounded-md border border-border p-0.5">
+          <button
+            type="button"
+            className={`rounded px-2 py-1 text-xs font-medium ${
+              sortMode === "dispatch" ? "bg-primary text-white" : "text-muted hover:text-foreground"
+            }`}
+            onClick={() => setSortMode("dispatch")}
+          >
+            {t("projects.sortDispatch")}
+          </button>
+          <button
+            type="button"
+            className={`rounded px-2 py-1 text-xs font-medium ${
+              sortMode === "created" ? "bg-primary text-white" : "text-muted hover:text-foreground"
+            }`}
+            onClick={() => setSortMode("created")}
+          >
+            {t("projects.sortByCreated")}
+          </button>
+        </div>
+        {sortMode === "created" && (
+          <button
+            className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-muted-bg hover:text-foreground"
+            onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
+            aria-label={sortDir === "desc" ? t("projects.sortAscending") : t("projects.sortDescending")}
+          >
+            <SortIcon dir={sortDir} />
+            {sortDir === "desc" ? t("projects.newestFirst") : t("projects.oldestFirst")}
+          </button>
+        )}
       </div>
       <ul className="flex flex-col gap-2 p-2">
         {sorted.map((project) => {
         const isSelected = project.project_id === selectedProjectId;
-        const date = formatListDate(project.start_time, locale);
+        const scheduleLine = formatScheduleShort(project, LOCALE_CODE[locale], t("schedule.kind.asap"));
+        const badge = getScheduleBadge(project);
 
         return (
           <li key={project.project_id}>
@@ -98,8 +119,16 @@ export default function ProjectList({ projects, selectedProjectId, onSelect }: P
                   className="mt-0.5 h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: STATUS_SOLID_COLORS[project.project_status ?? -1] ?? "#d1d5db" }}
                 />
-                {date && (
-                  <span className="text-xs text-muted">{date}</span>
+                <span className="max-w-[10rem] text-right text-xs text-muted">{scheduleLine}</span>
+                {badge === "overdueWindow" && (
+                  <Chip size="sm" color="danger" variant="flat" className="h-5 min-h-5 text-[10px]">
+                    {t("schedule.badge.overdueWindow")}
+                  </Chip>
+                )}
+                {badge === "pastAppointment" && (
+                  <Chip size="sm" color="warning" variant="flat" className="h-5 min-h-5 text-[10px]">
+                    {t("schedule.badge.pastAppointment")}
+                  </Chip>
                 )}
               </div>
             </button>

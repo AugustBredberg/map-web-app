@@ -10,7 +10,14 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { CalendarDate, toZoned, getLocalTimeZone } from "@internationalized/date";
+import {
+  CalendarDate,
+  toZoned,
+  getLocalTimeZone,
+  today,
+  now,
+} from "@internationalized/date";
+import type { ScheduleKind } from "@/lib/projectSchedule";
 import { DatePicker } from "@heroui/react";
 import { useNewProject } from "@/context/NewProjectContext";
 import { useDrawer } from "@/context/DrawerContext";
@@ -21,6 +28,7 @@ import type { Customer, CustomerLocation, OrganizationMember } from "@/lib/supab
 import { getOrgMembers } from "@/lib/members";
 import { useLocale } from "@/context/LocaleContext";
 import OrganizationItemsPicker from "@/components/project/OrganizationItemsPicker";
+import AppointmentTimeInput from "@/components/project/AppointmentTimeInput";
 import {
   forwardGeocode,
   isMapTilerGeocodingAvailable,
@@ -731,8 +739,14 @@ function StepDetails() {
     setDescription,
     projectStatus,
     setProjectStatus,
-    startTime,
-    setStartTime,
+    scheduleKind,
+    setScheduleKind,
+    windowStart,
+    setWindowStart,
+    windowEnd,
+    setWindowEnd,
+    appointmentAt,
+    setAppointmentAt,
     assignees,
     setAssignees,
     selectedOrganizationItemIds,
@@ -756,18 +770,45 @@ function StepDetails() {
     return () => { cancelled = true; };
   }, [activeOrg]);
 
-  const dateValue = startTime
-    ? new CalendarDate(startTime.year, startTime.month, startTime.day)
-    : null;
+  const tz = getLocalTimeZone();
 
-  const handleDateChange = (date: CalendarDate | null) => {
-    if (!date) { setStartTime(null); return; }
-    const h = startTime?.hour ?? 9;
-    const m = startTime?.minute ?? 0;
-    setStartTime(toZoned(date, getLocalTimeZone()).set({ hour: h, minute: m }));
+  const onScheduleKindPress = (k: ScheduleKind) => {
+    setScheduleKind(k);
+    if (k === "window" && !windowStart) {
+      const t = today(tz);
+      setWindowStart(t);
+      setWindowEnd(t.add({ days: 2 }));
+    }
+    if (k === "appointment" && !appointmentAt) {
+      setAppointmentAt(now(tz).set({ hour: 9, minute: 0, second: 0, millisecond: 0 }));
+    }
   };
 
-  const canSubmit = title.trim().length > 0 && !isWorking;
+  const windowStartValue = windowStart ?? null;
+  const windowEndValue = windowEnd ?? null;
+  const appointmentDateValue = appointmentAt
+    ? new CalendarDate(appointmentAt.year, appointmentAt.month, appointmentAt.day)
+    : null;
+
+  const handleAppointmentDateChange = (date: CalendarDate | null) => {
+    if (!date) {
+      setAppointmentAt(null);
+      return;
+    }
+    const h = appointmentAt?.hour ?? 9;
+    const m = appointmentAt?.minute ?? 0;
+    setAppointmentAt(toZoned(date, tz).set({ hour: h, minute: m, second: 0, millisecond: 0 }));
+  };
+
+  const scheduleValid =
+    scheduleKind === "asap" ||
+    (scheduleKind === "window" &&
+      windowStartValue !== null &&
+      windowEndValue !== null &&
+      windowEndValue.compare(windowStartValue) >= 0) ||
+    (scheduleKind === "appointment" && appointmentAt !== null);
+
+  const canSubmit = title.trim().length > 0 && !isWorking && scheduleValid;
 
   return (
     <div className="flex flex-col gap-4">
@@ -854,15 +895,67 @@ function StepDetails() {
           </div>
         )}
 
-        <DatePicker
-          label={t("createProjectWizard.startTime")}
-          value={dateValue}
-          onChange={handleDateChange}
-          isDisabled={isWorking}
-          variant="bordered"
-          granularity="day"
-          aria-label={t("createProjectWizard.dateAriaLabel")}
-        />
+        <div className="rounded-xl border border-border bg-muted-bg/40 p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+            {t("schedule.sectionLabel")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {(["asap", "window", "appointment"] as const).map((k) => (
+              <Button
+                key={k}
+                size="sm"
+                variant={scheduleKind === k ? "solid" : "bordered"}
+                color={scheduleKind === k ? "primary" : "default"}
+                className="min-w-0 flex-1"
+                onPress={() => onScheduleKindPress(k)}
+                isDisabled={isWorking}
+              >
+                {t(`schedule.kind.${k}`)}
+              </Button>
+            ))}
+          </div>
+          {scheduleKind === "window" && (
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <DatePicker
+                label={t("schedule.windowFrom")}
+                value={windowStartValue}
+                onChange={(v) => setWindowStart(v ? new CalendarDate(v.year, v.month, v.day) : null)}
+                variant="bordered"
+                granularity="day"
+                isDisabled={isWorking}
+                className="flex-1"
+              />
+              <DatePicker
+                label={t("schedule.windowTo")}
+                value={windowEndValue}
+                onChange={(v) => setWindowEnd(v ? new CalendarDate(v.year, v.month, v.day) : null)}
+                variant="bordered"
+                granularity="day"
+                isDisabled={isWorking}
+                className="flex-1"
+              />
+            </div>
+          )}
+          {scheduleKind === "appointment" && appointmentAt && (
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <DatePicker
+                label={t("schedule.appointmentDate")}
+                value={appointmentDateValue}
+                onChange={handleAppointmentDateChange}
+                variant="bordered"
+                granularity="day"
+                isDisabled={isWorking}
+                className="flex-1"
+              />
+              <AppointmentTimeInput
+                label={t("schedule.appointmentTime")}
+                value={appointmentAt}
+                onChange={setAppointmentAt}
+                isDisabled={isWorking}
+              />
+            </div>
+          )}
+        </div>
 
         {members.length > 0 && (
           <Select

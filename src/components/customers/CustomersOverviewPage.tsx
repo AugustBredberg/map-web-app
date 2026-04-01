@@ -7,7 +7,8 @@ import { useOrg } from "@/context/OrgContext";
 import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
 import { hasMinRole } from "@/lib/supabase";
-import type { Customer } from "@/lib/supabase";
+import type { Customer, Project } from "@/lib/supabase";
+import { formatScheduleShort } from "@/lib/projectSchedule";
 import type { Locale } from "@/lib/i18n";
 import { STATUS_SOLID_COLORS } from "@/lib/projectStatus";
 import {
@@ -18,15 +19,6 @@ import {
 import CustomerContactSection from "@/components/customers/CustomerContactSection";
 
 const LOCALE_CODE: Record<Locale, string> = { en: "en-GB", sv: "sv-SE" };
-
-function formatListDate(iso: string | null, locale: Locale) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString(LOCALE_CODE[locale], {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-}
 
 function formatHours(n: number, locale: Locale) {
   return new Intl.NumberFormat(LOCALE_CODE[locale], {
@@ -354,7 +346,7 @@ function CustomerDetailBody({
             {row.projects.map((job) => {
               const st = job.project_status ?? -1;
               const dot = STATUS_SOLID_COLORS[st] ?? "#94a3b8";
-              const when = formatListDate(job.start_time, locale);
+              const when = formatScheduleShort(job as unknown as Project, LOCALE_CODE[locale], t("schedule.kind.asap"));
               const assigneeLabel =
                 job.assigneeUserIds.length === 0
                   ? t("customersPage.unassigned")
@@ -376,7 +368,7 @@ function CustomerDetailBody({
                         <p className="mt-0.5 text-xs text-muted">{job.siteLabel}</p>
                       )}
                       <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
-                        {when && <span>{when}</span>}
+                        <span>{when}</span>
                         <span className="inline-flex items-center gap-1.5">
                           <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: dot }} />
                           {t(`statusLabels.${st}`)}
